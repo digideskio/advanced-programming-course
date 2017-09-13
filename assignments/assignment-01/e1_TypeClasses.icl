@@ -78,15 +78,12 @@ instance serialize (Bin a) | serialize a where
         br = if (isJust n) (read (snd (fromJust n))) Nothing
     read _ = Nothing
 
-Start = test (Bin (Bin Leaf 2 Leaf) 5 Leaf)
-
-/*
 Start = [
          test True,
          test False,
          test [True],
          test [True, False, False],
          test [1, 2, 3],
-         test [[], [[True, False], [False], []]]
+         test [[], [[True, False], [False], []]],
+         test (Bin (Bin Leaf 2 Leaf) 5 Leaf)
         ]
-        */
