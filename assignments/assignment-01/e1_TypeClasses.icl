@@ -15,6 +15,9 @@ instance == (Bin a) | == a where
     (==) (Bin b1 n b2) (Bin b1` n` b2`) = b1 == b1` && n == n` && b2 == b2`
     (==) _ _ = False
 
+instance == (Rose a) | == a where
+    (==) (Rose a roses) (Rose a` roses`) = a == a` && roses == roses`
+
 class serialize a where
     write :: a [String] -> [String]
     read  :: [String] -> Maybe (a, [String])
