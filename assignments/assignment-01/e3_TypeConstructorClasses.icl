@@ -39,11 +39,11 @@ c4 = Cinsert 6 c3
 c5 = Cinsert 3 c4
 
 // Define some tests
-t1 = (Ccontains 3 c, Cshow c) where c = c1
-t2 = (Ccontains 3 c, Cshow c) where c = c2
-t3 = (Ccontains 3 c, Cshow c) where c = c3
-t4 = (Ccontains 6 c, Cshow c) where c = c3
-t5 = (Ccontains 3 c, Cshow c) where c = c4
-t6 = (Ccontains 6 c, Cshow c) where c = c5
+t1 = (Ccontains 3 c, Cshow c) where c = c1 // False
+t2 = (Ccontains 3 c, Cshow c) where c = c2 // False
+t3 = (Ccontains 3 c, Cshow c) where c = c3 // True
+t4 = (Ccontains 6 c, Cshow c) where c = c3 // True
+t5 = (Ccontains 3 c, Cshow c) where c = c4 // True
+t6 = (Ccontains 6 c, Cshow c) where c = c5 // True
 
-Start = [t1, t2, t3, t4, t5, t6]
+Start = [t1, t2, t3, t4, t5, t6, t7]
