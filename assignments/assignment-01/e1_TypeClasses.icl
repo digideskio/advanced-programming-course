@@ -10,6 +10,11 @@ import StdMaybe
 :: Bin a = Leaf | Bin (Bin a) a (Bin a)
 :: Rose a = Rose a [Rose a]
 
+instance == (Bin a) | == a where
+    (==) Leaf Leaf = True
+    (==) (Bin b1 n b2) (Bin b1` n` b2`) = b1 == b1` && n == n` && b2 == b2`
+    (==) _ _ = False
+
 class serialize a where
     write :: a [String] -> [String]
     read  :: [String] -> Maybe (a, [String])
@@ -61,6 +66,21 @@ instance serialize [a] | serialize a where
               result2 = fromJust mayberes2
   read _ = Nothing
 
+// Binary tree serialization
+instance serialize (Bin a) | serialize a where
+    write Leaf c = ["Leaf" : c]
+    write (Bin bl n br) c = ["Bin" : write bl [] ++ write n [] ++ write br [] ++ c]
+    read ["Leaf" : r] = Just (Leaf, r)
+    read ["Bin" : r] = if (isJust br) (Just (Bin (fst (fromJust bl)) (fst (fromJust n)) (fst (fromJust br)), snd (fromJust br))) Nothing
+    where
+        bl = read r
+        n  = if (isJust bl) (read (snd (fromJust bl))) Nothing
+        br = if (isJust n) (read (snd (fromJust n))) Nothing
+    read _ = Nothing
+
+Start = test (Bin (Bin Leaf 2 Leaf) 5 Leaf)
+
+/*
 Start = [
          test True,
          test False,
@@ -69,3 +89,4 @@ Start = [
          test [1, 2, 3],
          test [[], [[True, False], [False], []]]
         ]
+        */
