@@ -55,19 +55,22 @@ instance serialize Int where
 // Lists are stored as ["\x01", <repr. el. 1>, ..., <repr. el. n>, "\x04"].
 // Nested and/or empty lists supported because of the "\x01" "\x04" demarcation.
 instance serialize [a] | serialize a where
-  write b c = ["\x01" : reprs] ++ ["\x04" : c]
-  where reprs = flatten (map (\e -> write e []) b)
-  read ["\x01":r] = readList r
-  where readList ["\x04":r] = Just ([],r)
+    write b c = ["\x01" : reprs] ++ ["\x04" : c]
+    where
+        reprs = flatten (map (\e -> write e []) b)
+    read ["\x01":r] = readList r
+    where
+        readList ["\x04":r] = Just ([],r)
         readList r
           | (isJust mayberes1) && (isJust mayberes2) =
               Just ([fst result1 : fst result2], snd result2)
           | otherwise = Nothing
-        where mayberes1 = read r
-              result1 = fromJust mayberes1
-              mayberes2 = readList (snd result1)
-              result2 = fromJust mayberes2
-  read _ = Nothing
+        where
+            mayberes1 = read r
+            result1 = fromJust mayberes1
+            mayberes2 = readList (snd result1)
+            result2 = fromJust mayberes2
+    read _ = Nothing
 
 // Binary tree serialization
 instance serialize (Bin a) | serialize a where
