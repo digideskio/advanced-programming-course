@@ -81,6 +81,14 @@ instance serialize (Bin a) | serialize a where
         br = if (isJust n) (read (snd (fromJust n))) Nothing
     read _ = Nothing
 
+// Rose serialization
+instance serialize (Rose a) | serialize a where
+    write (Rose a roses) c = write a [] ++ write roses [] ++ c
+    read r = if (isJust roses) (Just (Rose (fst (fromJust a)) (fst (fromJust roses)), snd (fromJust roses))) Nothing
+    where
+        a = read r
+        roses = if (isJust a) (read (snd (fromJust a))) Nothing
+
 Start = [
          test True,
          test False,
@@ -88,5 +96,6 @@ Start = [
          test [True, False, False],
          test [1, 2, 3],
          test [[], [[True, False], [False], []]],
-         test (Bin (Bin Leaf 2 Leaf) 5 Leaf)
+         test (Bin (Bin Leaf 2 Leaf) 5 Leaf),
+         test (Rose 5 [Rose 6 [Rose 9 []], Rose 7 []])
         ]
