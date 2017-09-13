@@ -29,6 +29,7 @@ where
     
 /*-------------------------------------------------*/
 
+// Int serialization
 instance serialize Int where
     write i c = [toString i : c]
     read [s : r] = if (isJust m) (Just ((fromJust m), r)) Nothing
@@ -42,7 +43,7 @@ instance serialize Int where
         where
             p = toInt s
 
-// List serialisation
+// List serialization
 // Lists are stored as ["\x01", <repr. el. 1>, ..., <repr. el. n>, "\x04"].
 // Nested and/or empty lists supported because of the "\x01" "\x04" demarcation.
 instance serialize [a] | serialize a where
@@ -59,7 +60,6 @@ instance serialize [a] | serialize a where
               mayberes2 = readList (snd result1)
               result2 = fromJust mayberes2
   read _ = Nothing
-
 
 Start = [
          test True,
