@@ -30,6 +30,7 @@ instance Container [] where
     Cshow l       = map toString l
     Cnew          = []
 
+// Binary tree instance for the container type constructor class
 instance Container Bin where
     Cinsert n (Bin l e r)
       | n < e     = Bin (Cinsert n l) e r
@@ -44,7 +45,7 @@ instance Container Bin where
     Cshow Leaf = ["Leaf"]
     Cnew = Leaf
 
-/* Define some int containers */
+// Define some int containers
 c1 :: [Int]
 //c1 :: Bin Int
 c1 = Cnew
@@ -52,6 +53,13 @@ c2 = Cinsert 6 c1
 c3 = Cinsert 3 c2
 c4 = Cinsert 6 c3
 c5 = Cinsert 3 c4
+
+// Define some list of int containers
+c1` :: [[Int]]
+// c1` :: Bin [Int]
+c1` = Cnew
+c2` = Cinsert [3, 2, 1] c1`
+c3` = Cinsert [1, 2, 3] c2`
 
 // Define some tests
 t1 = (Ccontains 3 c, Cshow c) where c = c1 // False
@@ -61,4 +69,7 @@ t4 = (Ccontains 6 c, Cshow c) where c = c3 // True
 t5 = (Ccontains 3 c, Cshow c) where c = c4 // True
 t6 = (Ccontains 6 c, Cshow c) where c = c5 // True
 
-Start = [t1, t2, t3, t4, t5, t6, t7]
+t7 = (Ccontains [1, 2, 3] c, Cshow c) where c = c2` // False
+t8 = (Ccontains [1, 2, 3] c, Cshow c) where c = c3` // True
+
+Start = [t1, t2, t3, t4, t5, t6, t7, t8]
