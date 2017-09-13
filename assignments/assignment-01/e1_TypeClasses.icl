@@ -26,4 +26,17 @@ where
     
 /*-------------------------------------------------*/
 
-Start = [test True, test False]
+instance serialize Int where
+    write i c = [toString i : c]
+    read [s : r] = if (isJust m) (Just ((fromJust m), r)) Nothing
+    where
+        m = maybeInt s
+        maybeInt :: String -> Maybe Int
+        maybeInt s
+          | p <> 0 = Just p
+          | p == 0 && (s == "0") = Just p
+          | otherwise = Nothing
+        where
+            p = toInt s
+
+Start = [test True, test 0]
