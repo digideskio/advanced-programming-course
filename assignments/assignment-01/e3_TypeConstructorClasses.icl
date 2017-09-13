@@ -6,8 +6,10 @@ module e3_TypeConstructorClasses
 
 import StdEnv
 
+// Define binary trees
 :: Bin a = Leaf | Bin (Bin a) a (Bin a)
 
+// Define the container type constructor class
 class Container t where
     Cinsert   :: a (t a) -> t a      | < a
     Ccontains :: a (t a) -> Bool     | <, Eq a
@@ -16,6 +18,7 @@ class Container t where
 
 /*-------------------------------------------------*/
 
+// List instance for the container type constructor class
 instance Container [] where
     Cinsert a l   = [a : l]
     Ccontains a l = isMember a l
@@ -27,7 +30,7 @@ instance Container [] where
     Cshow l       = map toString l
     Cnew          = []
 
-/* Define some int containers using lists */
+// Define some int containers using lists
 c1 :: [Int]
 c1 = Cnew
 c2 = Cinsert 6 c1
@@ -35,7 +38,7 @@ c3 = Cinsert 3 c2
 c4 = Cinsert 6 c3
 c5 = Cinsert 3 c4
 
-/* Define some tests */
+// Define some tests
 t1 = (Ccontains 3 c, Cshow c) where c = c1
 t2 = (Ccontains 3 c, Cshow c) where c = c2
 t3 = (Ccontains 3 c, Cshow c) where c = c3
