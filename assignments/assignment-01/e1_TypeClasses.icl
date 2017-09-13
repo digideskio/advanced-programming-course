@@ -1,3 +1,7 @@
+/* Jordi Riemens    s4243064
+ * Thomas Churchman s4206606
+ */
+
 module e1_TypeClasses
 
 import StdEnv
