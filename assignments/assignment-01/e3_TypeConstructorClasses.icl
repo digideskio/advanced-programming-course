@@ -27,8 +27,23 @@ instance Container [] where
     Cshow l       = map toString l
     Cnew          = []
 
-/* Define some int containers using lists */
+instance Container Bin where
+    Cinsert n (Bin l e r)
+      | n < e     = Bin (Cinsert n l) e r
+      | otherwise = Bin l e (Cinsert n r)
+    Cinsert n Leaf = Bin Leaf n Leaf
+    Ccontains n (Bin l e r)
+      | n == e = True
+      | n < e  = Ccontains n l
+      | n > e  = Ccontains n r
+    Ccontains _ Leaf = False
+    Cshow (Bin l e r) = ["Bin"] ++ (Cshow l) ++ [toString e] ++ (Cshow r)
+    Cshow Leaf = ["Leaf"]
+    Cnew = Leaf
+
+/* Define some int containers */
 c1 :: [Int]
+//c1 :: Bin Int
 c1 = Cnew
 c2 = Cinsert 6 c1
 c3 = Cinsert 3 c2
