@@ -50,6 +50,8 @@ class serialize a where
     write :: a [String] -> [String]
     read  :: [String] -> Maybe (a, [String])
 
+// 2.1
+/*
 instance serialize UNIT where
     write UNIT r = ["UNIT" : r]
     read ["UNIT" : r] = Just (UNIT, r)
@@ -81,7 +83,39 @@ instance serialize (CONS a) | serialize a where
         Just (a, r2) = Just (CONS name a, r2)
         Nothing = Nothing
     read _ = Nothing
+*/
 
+// 2.2
+instance serialize UNIT where
+    write UNIT r = r
+    read r = Just (UNIT, r)
+
+instance serialize (EITHER (CONS a) (CONS b)) | serialize a & serialize b where
+    write (LEFT  a) r = write a r
+    write (RIGHT b) r = write b r
+    read r 
+    	# a` = read r
+    	# b` = read r
+    	= case a` of
+            Just (a, r2) = Just (LEFT a, r2)
+            otherwise = case b` of
+                Just (b, r3) = Just (RIGHT b, r3)
+                Nothing = Nothing
+
+instance serialize (PAIR a b) | serialize a & serialize b where
+    write (PAIR a b) r = write a (write b r)
+    read r = case read r of
+        Just (a, r2) = case read r2 of
+            Just (b, r3) = Just (PAIR a b, r3)
+            Nothing = Nothing
+        Nothing = Nothing
+
+instance serialize (CONS a) | serialize a where
+    write (CONS name a) r = ["(" : name : write a r] ++ [")"]
+    read ["(" : name : r] = case read r of
+        Just (a, [")" : r2]) = Just (CONS name a, r2)
+        _ = Nothing
+    read _ = Nothing
 
 // Serialization for regular data types
 instance serialize Bool where // from Blackboard
