@@ -110,11 +110,20 @@ instance serialize (PAIR a b) | serialize a & serialize b where
             Nothing = Nothing
         Nothing = Nothing
 
+// CONS serializer with a hacky way to prevent printing of
+// parentheses around constructors without arguments.
 instance serialize (CONS a) | serialize a where
-    write (CONS name a) r = ["(" : name : write a [")" : r]]
+    write (CONS name a) r 
+        #a` = write a []
+        = case a` of
+            [] = [name : a`] ++ r
+            _  = ["(" : name : write a [")" : r]]
     read ["(" : name : r] = case read r of
         Just (a, [")" : r2]) = Just (CONS name a, r2)
-        _ = Nothing
+        _                    = Nothing
+    read [name : r] = case read r of
+        Just (a, r2) = Just (CONS name a, r2)
+        _            = Nothing
     read _ = Nothing
 
 // Serialization for regular data types
