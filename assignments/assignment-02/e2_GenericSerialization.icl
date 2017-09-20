@@ -16,16 +16,24 @@ import StdMaybe
 // Define binary trees type
 :: Bin a    = Leaf | Bin (Bin a) a (Bin a)
 
-// Define generic representation types:
-:: ListG a :== EITHER (CONS UNIT) (CONS (PAIR a [a]))
-:: BinG a  :== EITHER (CONS UNIT) (CONS (PAIR (Bin a) (PAIR a (Bin a))))
+// Define arbitrary algebraic type with two constructors without arguments
+:: T = A | B
 
-// Define Bin equality for testing
+// Define type equality for testing
 instance == (Bin a) | == a where 
   (==) Leaf Leaf = True
   (==) (Bin l a r) (Bin k b s) = l == k && a == b && r == s
   (==) _ _ = False
+  
+instance == T where
+    (==) A A = True
+    (==) B B = True
+    (==) _ _ = False
 
+// Define generic representation types:
+:: ListG a :== EITHER (CONS UNIT) (CONS (PAIR a [a]))
+:: BinG a  :== EITHER (CONS UNIT) (CONS (PAIR (Bin a) (PAIR a (Bin a))))
+:: TG      :== EITHER (CONS UNIT) (CONS UNIT)
 
 // Define transformation functions
 fromList :: [a] -> ListG a
@@ -44,6 +52,13 @@ toBin :: (BinG a) -> Bin a
 toBin (LEFT _)                               = Leaf
 toBin (RIGHT (CONS _ (PAIR b1 (PAIR b b2)))) = Bin b1 b b2
 
+fromT :: T -> TG
+fromT A = LEFT (CONS "A" UNIT)
+fromT B = RIGHT (CONS "B" UNIT)
+
+toT :: TG -> T
+toT (LEFT _) = A
+toT (RIGHT _) = B
 
 // Serialisation for generic data types
 class serialize a where
@@ -154,6 +169,11 @@ instance serialize [a] | serialize a where
 	    Just (l, r) = Just (toList l, r)
 		Nothing = Nothing
 
+instance serialize T where
+    write t r = write (fromT t) r
+    read r = case read r of
+	    Just (l, r) = Just (toT l, r)
+		Nothing = Nothing
 
 // Tests from Blackboard
 Start = 
@@ -168,6 +188,8 @@ Start =
   ,test (Bin Leaf True Leaf)
   ,test [Bin (Bin Leaf [1] Leaf) [2] (Bin Leaf [3] (Bin Leaf [4,5] Leaf))]
   ,test [Bin (Bin Leaf [1] Leaf) [2] (Bin Leaf [3] (Bin (Bin Leaf [4,5] Leaf) [6,7] (Bin Leaf [8,9] Leaf)))]
+  ,test A
+  ,test B
   ]
 
 test :: a -> ([String],[String]) | serialize, == a
