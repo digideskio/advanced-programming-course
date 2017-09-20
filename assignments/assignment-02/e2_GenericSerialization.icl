@@ -90,7 +90,7 @@ instance serialize UNIT where
     write UNIT r = r
     read r = Just (UNIT, r)
 
-instance serialize (EITHER (CONS a) (CONS b)) | serialize a & serialize b where
+instance serialize (EITHER a b) | serialize a & serialize b where
     write (LEFT  a) r = write a r
     write (RIGHT b) r = write b r
     read r 
