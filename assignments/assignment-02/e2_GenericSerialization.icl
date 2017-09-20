@@ -20,6 +20,12 @@ import StdMaybe
 :: ListG a :== EITHER (CONS UNIT) (CONS (PAIR a [a]))
 :: BinG a  :== EITHER (CONS UNIT) (CONS (PAIR (Bin a) (PAIR a (Bin a))))
 
+// Define Bin equality for testing
+instance == (Bin a) | == a where 
+  (==) Leaf Leaf = True
+  (==) (Bin l a r) (Bin k b s) = l == k && a == b && r == s
+  (==) _ _ = False
+
 
 // Define transformation functions
 fromList :: [a] -> ListG a
@@ -76,20 +82,22 @@ instance serialize (CONS a) | serialize a where
         Nothing = Nothing
     read _ = Nothing
 
+
 // Serialization for regular data types
-instance serialize Int where // Int serialization from last week
-    write i c = [toString i : c]
-    read [s : r] = case maybeInt s of
-        Just m = Just (m, r)
-        Nothing = Nothing
-    where
-        maybeInt :: String -> Maybe Int
-        maybeInt s
-          | p <> 0 = Just p
-          | p == 0 && (s == "0") = Just p
-          | otherwise = Nothing
-        where
-            p = toInt s
+instance serialize Bool where // from Blackboard
+    write b c = [toString b:c]
+    read ["True":r]  = Just (True,r)
+    read ["False":r] = Just (False,r)
+    read _ = Nothing
+
+instance serialize Int where // from Blackboard
+    write i c = [toString i:c]
+    read [s:r]
+        # i = toInt s
+        | s == toString i
+          = Just (i,r)
+          = Nothing
+    read _ = Nothing
 
 instance serialize (Bin a) | serialize a where
     write t r = write (fromBin t) r
@@ -104,11 +112,34 @@ instance serialize [a] | serialize a where
 		Nothing = Nothing
 
 
-testbin = Bin Leaf 0 (Bin (Bin Leaf 4 Leaf) 2 Leaf)
-testlist = [1..5]
+// Tests from Blackboard
+Start = 
+  [test True
+  ,test False
+  ,test 0
+  ,test 123
+  ,test -36
+  ,test [42]
+  ,test [0..4]
+  ,test [[True],[]]
+  ,test (Bin Leaf True Leaf)
+  ,test [Bin (Bin Leaf [1] Leaf) [2] (Bin Leaf [3] (Bin Leaf [4,5] Leaf))]
+  ,test [Bin (Bin Leaf [1] Leaf) [2] (Bin Leaf [3] (Bin (Bin Leaf [4,5] Leaf) [6,7] (Bin Leaf [8,9] Leaf)))]
+  ]
 
-//Start :: Maybe (Bin Int, [String])
-//Start = read (write testbin [])
+test :: a -> ([String],[String]) | serialize, == a
+test a = 
+  (if (isJust r)
+    (if (fst jr == a)
+      (if (isEmpty (tl (snd jr)))
+        ["Oke "]
+        ["Fail: not all input is consumed! ":snd jr])
+      ["Fail: Wrong result ":write (fst jr) []])
+    ["Fail: read result is Nothing "]
+  , ["write produces ": s]
+  )
+  where
+    s = write a ["\n"]
+    r = read s
+    jr = fromJust r
 
-Start :: Maybe ([Int], [String])
-Start = read (write testlist [])
