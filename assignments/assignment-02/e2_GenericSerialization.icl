@@ -49,7 +49,7 @@ instance serialize UNIT where
     read ["UNIT" : r] = Just (UNIT, r)
     read _ = Nothing
 
-instance serialize EITHER a b | serialize a, serialize b where
+instance serialize (EITHER a b) | serialize a & serialize b where
     write (LEFT  a) r = ["LEFT"  : write a] ++ r
     write (RIGHT b) r = ["RIGHT" : write b] ++ r
     read ["LEFT" : r] = case read r of
@@ -60,7 +60,7 @@ instance serialize EITHER a b | serialize a, serialize b where
         Nothing = Nothing
     read _ = Nothing
 
-instance serialize PAIR a b | serialize a, serialize b where
+instance serialize (PAIR a b) | serialize a & serialize b where
     write (PAIR a b) r = ["PAIR" : write a] ++ write b ++ r
     read ["PAIR" : r] = case read r of
         Just (a, r2) = case read r2 of
@@ -69,7 +69,7 @@ instance serialize PAIR a b | serialize a, serialize b where
         Nothing = Nothing
     read _ = Nothing
 
-instance serialize CONS a | serialize a where
+instance serialize (CONS a) | serialize a where
     write (CONS name a) r = ["CONS" : name : write a] ++ r
     read ["CONS" : name : r] = case read r of
         Just (a, r2) = Just (CONS name a, r2)
@@ -91,7 +91,7 @@ instance serialize Int where // Int serialization from last week
         where
             p = toInt s
 
-instance serialize Bin a | serialize a where
+instance serialize (Bin a) | serialize a where
     write t r = write (fromBin t) r
 	read r = toBin (read r)
 
