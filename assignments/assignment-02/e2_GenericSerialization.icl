@@ -111,7 +111,7 @@ instance serialize (PAIR a b) | serialize a & serialize b where
         Nothing = Nothing
 
 instance serialize (CONS a) | serialize a where
-    write (CONS name a) r = ["(" : name : write a r] ++ [")"]
+    write (CONS name a) r = ["(" : name : write a [")" : r]]
     read ["(" : name : r] = case read r of
         Just (a, [")" : r2]) = Just (CONS name a, r2)
         _ = Nothing
