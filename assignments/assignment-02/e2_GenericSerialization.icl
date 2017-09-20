@@ -104,6 +104,11 @@ instance serialize [a] | serialize a where
 		Nothing = Nothing
 
 
-testcase = Bin Leaf 0 (Bin (Bin Leaf 4 Leaf) 2 Leaf)
-    
-Start = toBin (fromBin (testcase))
+testbin = Bin Leaf 0 (Bin (Bin Leaf 4 Leaf) 2 Leaf)
+testlist = [1..5]
+
+//Start :: Maybe (Bin Int, [String])
+//Start = read (write testbin [])
+
+Start :: Maybe ([Int], [String])
+Start = read (write testlist [])
