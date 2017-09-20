@@ -49,9 +49,9 @@ instance serialize UNIT where
     read ["UNIT" : r] = Just (UNIT, r)
     read _ = Nothing
 
-instance serialize EITHER a b | serialize a, serialize b where
-    write (LEFT  a) r = ["LEFT"  : write a] ++ r
-    write (RIGHT b) r = ["RIGHT" : write b] ++ r
+instance serialize (EITHER a b) | serialize a & serialize b where
+    write (LEFT  a) r = ["LEFT"  : write a r]
+    write (RIGHT b) r = ["RIGHT" : write b r]
     read ["LEFT" : r] = case read r of
         Just (a, r2) = Just (LEFT a, r2)
         Nothing = Nothing
@@ -60,8 +60,8 @@ instance serialize EITHER a b | serialize a, serialize b where
         Nothing = Nothing
     read _ = Nothing
 
-instance serialize PAIR a b | serialize a, serialize b where
-    write (PAIR a b) r = ["PAIR" : write a] ++ write b ++ r
+instance serialize (PAIR a b) | serialize a & serialize b where
+    write (PAIR a b) r = ["PAIR" : write a (write b r)]
     read ["PAIR" : r] = case read r of
         Just (a, r2) = case read r2 of
             Just (b, r3) = Just (PAIR a b, r3)
@@ -69,8 +69,8 @@ instance serialize PAIR a b | serialize a, serialize b where
         Nothing = Nothing
     read _ = Nothing
 
-instance serialize CONS a | serialize a where
-    write (CONS name a) r = ["CONS" : name : write a] ++ r
+instance serialize (CONS a) | serialize a where
+    write (CONS name a) r = ["CONS" : name : write a r]
     read ["CONS" : name : r] = case read r of
         Just (a, r2) = Just (CONS name a, r2)
         Nothing = Nothing
@@ -91,13 +91,17 @@ instance serialize Int where // Int serialization from last week
         where
             p = toInt s
 
-instance serialize Bin a | serialize a where
+instance serialize (Bin a) | serialize a where
     write t r = write (fromBin t) r
-	read r = toBin (read r)
+	read r = case read r of
+	    Just (t, r) = Just (toBin t, r)
+		Nothing = Nothing
 
 instance serialize [a] | serialize a where
-    write t r = write (fromList t) r
-	read r = toList (read r)
+    write l r = write (fromList l) r
+	read r = case read r of
+	    Just (l, r) = Just (toList l, r)
+		Nothing = Nothing
 
 
 testcase = Bin Leaf 0 (Bin (Bin Leaf 4 Leaf) 2 Leaf)
