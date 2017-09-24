@@ -1,0 +1,35 @@
+A simple example that breaks system 2.2 is included in 
+e2_GenericSerialization.icl and goes as follows:
+:: T = A | B
+
+This is translated to:
+:: TG      :== EITHER (CONS UNIT) (CONS UNIT)
+
+Thus, in the system of exercise 2.1, we would 
+serialise as follows:
+A --> LEFT CONS A UNIT
+B --> RIGHT CONS B UNIT
+
+In the system of exercise 2.2, however, we simply 
+serialise them as if they were code, omitting
+generic information about CONS and EITHER paths:
+A --> A
+B --> B
+
+The LEFT and RIGHT parts uniquely determine a
+path towards the right constructor. The problem 
+with system 2.2 is that the representation
+relies on constructor names to do this (in actual code,
+"A" and "B" are distinguished by their names),
+whereas generic deserialisation does not have a way
+to translate names into EITHER paths as it has no
+information about expected constructor names. Thus,
+it can only make use of type information to 
+make such distinctions, assuming the first read
+that does not result in an error yields the correct path.
+For lists and binary trees this does work
+(there, EITHER branches have different inner types),
+whereas type T (where both EITHER branches have 
+the same type, CONS UNIT) breaks the 
+(de-)serialisation system as the first read does not
+result in an error when deserialising B.
