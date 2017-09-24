@@ -1,3 +1,6 @@
+Jordi Riemens    s4243064
+Thomas Churchman s4206606
+
 A simple example that breaks system 2.2 is included in 
 e2_GenericSerialization.icl and goes as follows:
 :: T = A | B
