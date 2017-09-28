@@ -42,6 +42,55 @@ instance serialize Int where
 :: PAIR   a b = PAIR a b
 :: CONS   a   = CONS String a
 
+// Generic serialization
+class serialize1 t where
+  write1 :: (Write a) (t a) [String] -> [String]
+  read1 :: (Read a) [String] -> Maybe (t a,[String])
+  
+class serialize2 t where
+  write2 :: (Write a) (Write b) (t a b) [String] -> [String]
+  read2 :: (Read a) (Read b) [String] -> Maybe (t a b,[String])
+  
+instance serialize UNIT where
+  write UNIT r = r
+  read r = Just (UNIT, r)
+  
+instance serialize2 EITHER where
+  write2 writex _      (LEFT  x) r = writex x r
+  write2 _      writey (RIGHT y) r = writey y r
+  read2 readx ready r
+    # x` = readx r
+    # y` = ready r
+    = case x` of
+        Just (x, r2) = Just (LEFT x, r2)
+        otherwise = case y` of
+          Just (y, r3) = Just (RIGHT y, r3)
+          Nothing = Nothing
+  
+instance serialize2 PAIR where
+  write2 writex writey (PAIR x y) r = writex x (writey y r)
+  read2 readx ready r = case readx r of
+    Just (x, r2) = case ready r2 of
+      Just (y, r3) = Just (PAIR x y, r3)
+      Nothing = Nothing
+    Nothing = Nothing
+    
+// CONS serializer with a hacky way to prevent printing of
+// parentheses around constructors without arguments.
+instance serialize1 CONS where
+    write1 writex (CONS name x) r 
+        #x` = writex x []
+        = case x` of
+            [] = [name : x`] ++ r
+            _  = ["(" : name : writex x [")" : r]]
+    read1 readx ["(" : name : r] = case readx r of
+        Just (x, [")" : r2]) = Just (CONS name x, r2)
+        _                    = Nothing
+    read1 readx [name : r] = case readx r of
+        Just (x, r2) = Just (CONS name x, r2)
+        _            = Nothing
+    read1 _ _ = Nothing
+
 // Generic representation of lists
 :: ListG a :== EITHER (CONS UNIT) (CONS (PAIR a [a]))
 
