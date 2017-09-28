@@ -169,7 +169,13 @@ instance serialize Coin where
 	the value (7,True) as ["(","7",",","True",")"]
 */
 instance serialize (a,b) | serialize a & serialize b where
-	write (a,b) c = c
+	write (x, y) s = ["(" : write x ["," : write y [")" : s]]]
+	read  ["(", x, ",", y, ")" : s] =
+	    case read [x] of
+	        Nothing = Nothing
+   	        Just (x`, []) = case read [y] of
+   	            Nothing = Nothing
+   	            Just (y`, []) = Just ((x`, y`), s)
 	read _ = Nothing
 
 // ---
