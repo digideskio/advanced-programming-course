@@ -106,7 +106,6 @@ NilString :== "Nil"
 ConsString :== "Cons"
 
 instance serialize [a] | serialize a where
-    //write a s = write2 (write1 write) (write1 (write2 write1 write)) (fromList a) s
     write a s = write2 (write1 write) (write1 (write2 write write)) (fromList a) s
     read  s   = 
         case read2 (read1 read) (read1 (read2 read read)) s of
