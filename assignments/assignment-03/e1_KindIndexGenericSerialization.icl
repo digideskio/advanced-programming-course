@@ -134,8 +134,11 @@ instance == (Bin a) | == a where
     (==) _ _ = False
 
 instance serialize (Bin a) | serialize a where
-	write b s = s
-	read    l = Nothing
+	write b s = write2 (write1 write) (write1 (write2 write (write2 write write))) (fromBin b) s
+	read    s =
+	    case read2 (read1 read) (read1 (read2 read (read2 read read))) s of
+	        Just (b, s) = Just (toBin b, s)
+	        Nothing     = Nothing
 
 // Coin type
 :: Coin = Head | Tail
