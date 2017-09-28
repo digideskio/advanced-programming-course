@@ -1,6 +1,7 @@
 module e2_SerializationWithNativeGenerics
 
 /*
+ * Jordi Riemens    s4243064
  * Thomas Churchman s4206606
  *
  * Based on:
