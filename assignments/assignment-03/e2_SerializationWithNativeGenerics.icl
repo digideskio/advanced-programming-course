@@ -66,29 +66,20 @@ gRead{|PAIR|} readx ready r = case readx r of
         Nothing = Nothing
     Nothing = Nothing
 
+// TODO: Make it so that constructors/objects without arguments do not print parentheses
 gWrite{|CONS|} writex (CONS x) r 
-    #x` = writex x []
-    = case x` of
-        [] = x` ++ r
-        _  = ["(" : writex x [")" : r]]
+    = ["(" : writex x [")" : r]]
 gRead{|CONS|} readx ["(" : r] = case readx r of
     Just (x, [")" : r2]) = Just (CONS x, r2)
     _                    = Nothing
-gRead{|CONS|} readx r = case readx r of
-    Just (x, r2) = Just (CONS x, r2)
-    _            = Nothing
-
+gRead{|CONS|} _ _ = Nothing
+    
 gWrite{|OBJECT|} writex (OBJECT x) r
-    #x` = writex x []
-    = case x` of
-        [] = x` ++ r
-        _  = ["(" : writex x [")" : r]]
+    = ["(" : writex x [")" : r]]
 gRead{|OBJECT|} readx ["(" : r] = case readx r of
     Just (x, [")" : r2]) = Just (OBJECT x, r2)
     _                    = Nothing
-gRead{|OBJECT|} readx r = case readx r of
-    Just (x, r2) = Just (OBJECT x, r2)
-    _            = Nothing
+gRead{|OBJECT|} _ _ = Nothing
 
 // Lists serialization
 derive gWrite []
