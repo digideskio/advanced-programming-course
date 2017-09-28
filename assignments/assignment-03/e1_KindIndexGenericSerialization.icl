@@ -17,24 +17,24 @@ import StdEnv, StdMaybe
 
 // use this as serialize0 for kind *
 class serialize a where
-  write :: a [String] -> [String]
-  read  :: [String] -> Maybe (a,[String])
+    write :: a [String] -> [String]
+    read  :: [String] -> Maybe (a,[String])
 
 // Serialization for basic types:
 instance serialize Bool where
-  write b c = [toString b:c]
-  read ["True":r] = Just (True,r)
-  read ["False":r] = Just (False,r)
-  read _ = Nothing
+    write b c = [toString b:c]
+    read ["True":r] = Just (True,r)
+    read ["False":r] = Just (False,r)
+    read _ = Nothing
 
 instance serialize Int where
-  write i c = [toString i:c]
-  read [s:r]
-    # i = toInt s
-    | s == toString i
-      = Just (i,r)
-      = Nothing
-  read _ = Nothing
+    write i c = [toString i:c]
+    read [s:r]
+        # i = toInt s
+        | s == toString i
+            = Just (i,r)
+            = Nothing
+    read _ = Nothing
 
 // Generic types
 :: UNIT       = UNIT
@@ -44,36 +44,36 @@ instance serialize Int where
 
 // Generic serialization
 class serialize1 t where
-  write1 :: (Write a) (t a) [String] -> [String]
-  read1 :: (Read a) [String] -> Maybe (t a,[String])
+    write1 :: (Write a) (t a) [String] -> [String]
+    read1 :: (Read a) [String] -> Maybe (t a,[String])
   
 class serialize2 t where
-  write2 :: (Write a) (Write b) (t a b) [String] -> [String]
-  read2 :: (Read a) (Read b) [String] -> Maybe (t a b,[String])
+    write2 :: (Write a) (Write b) (t a b) [String] -> [String]
+    read2 :: (Read a) (Read b) [String] -> Maybe (t a b,[String])
   
 instance serialize UNIT where
-  write UNIT r = r
-  read r = Just (UNIT, r)
+    write UNIT r = r
+    read r = Just (UNIT, r)
   
 instance serialize2 EITHER where
-  write2 writex _      (LEFT  x) r = writex x r
-  write2 _      writey (RIGHT y) r = writey y r
-  read2 readx ready r
-    # x` = readx r
-    # y` = ready r
-    = case x` of
-        Just (x, r2) = Just (LEFT x, r2)
-        otherwise = case y` of
-          Just (y, r3) = Just (RIGHT y, r3)
-          Nothing = Nothing
+    write2 writex _      (LEFT  x) r = writex x r
+    write2 _      writey (RIGHT y) r = writey y r
+    read2 readx ready r
+        # x` = readx r
+        # y` = ready r
+        = case x` of
+            Just (x, r2) = Just (LEFT x, r2)
+            otherwise = case y` of
+                Just (y, r3) = Just (RIGHT y, r3)
+                Nothing = Nothing
   
 instance serialize2 PAIR where
-  write2 writex writey (PAIR x y) r = writex x (writey y r)
-  read2 readx ready r = case readx r of
-    Just (x, r2) = case ready r2 of
-      Just (y, r3) = Just (PAIR x y, r3)
-      Nothing = Nothing
-    Nothing = Nothing
+    write2 writex writey (PAIR x y) r = writex x (writey y r)
+    read2 readx ready r = case readx r of
+        Just (x, r2) = case ready r2 of
+            Just (y, r3) = Just (PAIR x y, r3)
+            Nothing = Nothing
+        Nothing = Nothing
     
 // CONS serializer with a hacky way to prevent printing of
 // parentheses around constructors without arguments.
@@ -106,8 +106,8 @@ NilString :== "Nil"
 ConsString :== "Cons"
 
 instance serialize [a] | serialize a where
- write a s = s
- read  s   = Nothing
+    write a s = s
+    read  s   = Nothing
 
 // Binary tree type
 :: Bin a = Leaf | Bin (Bin a) a (Bin a)
@@ -126,9 +126,9 @@ LeafString :== "Leaf"
 BinString :== "Bin"
 
 instance == (Bin a) | == a where
-  (==) Leaf Leaf = True
-  (==) (Bin l a r) (Bin k b s) = l == k && a == b && r == s
-  (==) _ _ = False
+    (==) Leaf Leaf = True
+    (==) (Bin l a r) (Bin k b s) = l == k && a == b && r == s
+    (==) _ _ = False
 
 instance serialize (Bin a) | serialize a where
 	write b s = s
@@ -147,9 +147,9 @@ toCoin (LEFT (CONS _ UNIT)) = Head
 toCoin (RIGHT (CONS _ UNIT)) = Tail
 
 instance == Coin where
-  (==) Head Head = True
-  (==) Tail Tail = True
-  (==) _    _    = False
+    (==) Head Head = True
+    (==) Tail Tail = True
+    (==) _    _    = False
 
 instance serialize Coin where
 	write c s = s
@@ -166,36 +166,36 @@ instance serialize (a,b) | serialize a & serialize b where
 // ---
 // output looks nice if compiled with "Basic Values Only" for console in project options
 Start = 
-  [test True
-  ,test False
-  ,test 0
-  ,test 123
-  ,test -36
-  ,test [42]
-  ,test [0..4]
-  ,test [[True],[]]
-  ,test [[[1]],[[2],[3,4]],[[]]]
-  ,test (Bin Leaf True Leaf)
-  ,test [Bin (Bin Leaf [1] Leaf) [2] (Bin Leaf [3] (Bin Leaf [4,5] Leaf))]
-  ,test [Bin (Bin Leaf [1] Leaf) [2] (Bin Leaf [3] (Bin (Bin Leaf [4,5] Leaf) [6,7] (Bin Leaf [8,9] Leaf)))]
-  ,test Head
-  ,test Tail
-  ,test (7,True)
-  ,test (Head,(7,[Tail]))
-  ,["End of the tests.\n"]
-  ]
+    [test True
+    ,test False
+    ,test 0
+    ,test 123
+    ,test -36
+    ,test [42]
+    ,test [0..4]
+    ,test [[True],[]]
+    ,test [[[1]],[[2],[3,4]],[[]]]
+    ,test (Bin Leaf True Leaf)
+    ,test [Bin (Bin Leaf [1] Leaf) [2] (Bin Leaf [3] (Bin Leaf [4,5] Leaf))]
+    ,test [Bin (Bin Leaf [1] Leaf) [2] (Bin Leaf [3] (Bin (Bin Leaf [4,5] Leaf) [6,7] (Bin Leaf [8,9] Leaf)))]
+    ,test Head
+    ,test Tail
+    ,test (7,True)
+    ,test (Head,(7,[Tail]))
+    ,["End of the tests.\n"]
+    ]
 
 test :: a -> [String] | serialize, == a
 test a = 
-  (if (isJust r)
-    (if (fst jr == a)
-      (if (isEmpty (tl (snd jr)))
-        ["Oke"]
-        ["Not all input is consumed! ":snd jr])
-      ["Wrong result: ":write (fst jr) []])
-    ["read result is Nothing"]
-  ) ++ [", write produces: ": s]
-  where
-    s = write a ["\n"]
-    r = read s
-    jr = fromJust r
+    (if (isJust r)
+        (if (fst jr == a)
+            (if (isEmpty (tl (snd jr)))
+                ["Oke"]
+                ["Not all input is consumed! ":snd jr])
+            ["Wrong result: ":write (fst jr) []])
+        ["read result is Nothing"]
+    ) ++ [", write produces: ": s]
+    where
+        s = write a ["\n"]
+        r = read s
+        jr = fromJust r
