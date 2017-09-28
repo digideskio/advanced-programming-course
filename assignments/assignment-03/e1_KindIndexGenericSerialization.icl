@@ -158,8 +158,11 @@ instance == Coin where
     (==) _    _    = False
 
 instance serialize Coin where
-	write c s = s
-	read    l = Nothing
+	write c s = write2 (write1 write) (write1 write) (fromCoin c) s
+	read    s = 
+	    case read2 (read1 read) (read1 read) s of
+	        Just (c, s) = Just (toCoin c, s)
+	        Nothing     = Nothing
 
 /*
 	Define a special purpose version for this type that writes and reads
