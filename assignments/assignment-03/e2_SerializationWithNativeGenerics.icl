@@ -67,20 +67,27 @@ gRead{|PAIR|} readx ready r = case readx r of
         Nothing = Nothing
     Nothing = Nothing
 
-// TODO: Make it so that constructors/objects without arguments do not print parentheses
-gWrite{|CONS|} writex (CONS x) r 
-    = ["(" : writex x [")" : r]]
-gRead{|CONS|} readx ["(" : r] = case readx r of
-    Just (x, [")" : r2]) = Just (CONS x, r2)
-    _                    = Nothing
+gWrite{|CONS of c|} writex (CONS x) r 
+    # x` = writex x []
+    = case x` of
+        [] = [c.gcd_name : x`] ++ r
+        _ = ["(" : c.gcd_name : writex x [")" : r]]
+gRead{|CONS of c|} readx ["(" : name : r] 
+    | name == c.gcd_name = case readx r of
+        Just (x, [")" : r2]) = Just (CONS x, r2)
+        _                    = Nothing
+    | otherwise = Nothing
+gRead{|CONS of c|} readx [name : r] 
+    | name == c.gcd_name = case readx r of
+        Just (x, r2) = Just (CONS x, r2)
+        _            = Nothing
+    | otherwise = Nothing
 gRead{|CONS|} _ _ = Nothing
     
-gWrite{|OBJECT|} writex (OBJECT x) r
-    = ["(" : writex x [")" : r]]
-gRead{|OBJECT|} readx ["(" : r] = case readx r of
-    Just (x, [")" : r2]) = Just (OBJECT x, r2)
-    _                    = Nothing
-gRead{|OBJECT|} _ _ = Nothing
+gWrite{|OBJECT|} writex (OBJECT x) r = writex x r
+gRead{|OBJECT|} readx r = case readx r of
+    Just (x, r2) = Just (OBJECT x, r2)
+    _            = Nothing
 
 // Lists serialization
 derive gWrite []
@@ -126,12 +133,12 @@ instance serialize Coin where
 */
 
 gWrite{|(,)|} writex writey (x, y) s = ["(" : writex x ["," : writey y [")" : s]]]
-gRead{|(,)|} readx ready ["(", x, ",", y, ")" : s] =
-    case readx [x] of
+gRead{|(,)|} readx ready ["(" : xyr] =
+    case readx xyr of
         Nothing = Nothing
-        Just (x`, []) = case ready [y] of
-   	        Nothing = Nothing
-   	        Just (y`, []) = Just ((x`, y`), s)
+        Just (x, ["," : yr]) = case ready yr of
+            Nothing = Nothing
+            Just (y, [")" : r]) = Just ((x,y), r)
 gRead{|(,)|} _ _ _ = Nothing
 
 //derive gWrite (,) 
