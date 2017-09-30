@@ -6,7 +6,7 @@ module e2_SerializationWithNativeGenerics
  *
  * Based on:
  * Definitions for assignment 3 in AFP 2017
- * Kind indexed gennerics
+ * Kind indexed generics
  * Pieter Koopman, pieter@cs.ru.nl
  * September 2017
 */
