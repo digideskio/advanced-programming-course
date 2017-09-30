@@ -108,7 +108,7 @@ ConsString :== "Cons"
 
 instance serialize [a] | serialize a where
     write a s = write2 (write1 write) (write1 (write2 write write)) (fromList a) s
-    read  s   = 
+    read s = 
         case read2 (read1 read) (read1 (read2 read read)) s of
             Just (l, s) = Just (toList l, s)
             Nothing     = Nothing
@@ -135,11 +135,11 @@ instance == (Bin a) | == a where
     (==) _ _ = False
 
 instance serialize (Bin a) | serialize a where
-	write b s = write2 (write1 write) (write1 (write2 write (write2 write write))) (fromBin b) s
-	read    s =
-	    case read2 (read1 read) (read1 (read2 read (read2 read read))) s of
-	        Just (b, s) = Just (toBin b, s)
-	        Nothing     = Nothing
+    write b s = write2 (write1 write) (write1 (write2 write (write2 write write))) (fromBin b) s
+    read s =
+        case read2 (read1 read) (read1 (read2 read (read2 read read))) s of
+            Just (b, s) = Just (toBin b, s)
+            Nothing     = Nothing
 
 // Coin type
 :: Coin = Head | Tail
@@ -159,24 +159,24 @@ instance == Coin where
     (==) _    _    = False
 
 instance serialize Coin where
-	write c s = write2 (write1 write) (write1 write) (fromCoin c) s
-	read    ["Tail" : s] = Just (Tail, s)
-	read    ["Head" : s] = Just (Head, s)
-	read    _ = Nothing
+    write c s = write2 (write1 write) (write1 write) (fromCoin c) s
+    read ["Tail" : s] = Just (Tail, s)
+    read ["Head" : s] = Just (Head, s)
+    read _ = Nothing
 
 /*
-	Define a special purpose version for this type that writes and reads
-	the value (7,True) as ["(","7",",","True",")"]
+    Define a special purpose version for this type that writes and reads
+    the value (7,True) as ["(","7",",","True",")"]
 */
 instance serialize (a,b) | serialize a & serialize b where
-	write (x, y) s = ["(" : write x ["," : write y [")" : s]]]
-	read  ["(", x, ",", y, ")" : s] =
-	    case read [x] of
-	        Nothing = Nothing
-   	        Just (x`, []) = case read [y] of
-   	            Nothing = Nothing
-   	            Just (y`, []) = Just ((x`, y`), s)
-	read _ = Nothing
+    write (x, y) s = ["(" : write x ["," : write y [")" : s]]]
+    read ["(" : xyr] =
+        case read xyr of
+            Nothing = Nothing
+            Just (x, ["," : yr]) = case read yr of
+                Nothing = Nothing
+                Just (y, [")" : r]) = Just ((x,y), r)
+    read _ = Nothing
 
 // ---
 // output looks nice if compiled with "Basic Values Only" for console in project options
