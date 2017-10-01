@@ -214,3 +214,25 @@ test a =
         s = write a ["\n"]
         r = read s
         jr = fromJust r
+
+/*
+ * Output:
+ * Oke, write produces: True
+ * Oke, write produces: False
+ * Oke, write produces: 0
+ * Oke, write produces: 123
+ * Oke, write produces: -36
+ * Oke, write produces: (Cons42Nil)
+ * Oke, write produces: (Cons0(Cons1(Cons2(Cons3(Cons4Nil)))))
+ * Oke, write produces: (Cons(ConsTrueNil)(ConsNilNil))
+ * Oke, write produces: (Cons(Cons(Cons1Nil)Nil)(Cons(Cons(Cons2Nil)(Cons(Cons3(Cons4Nil))Nil))(Cons(ConsNilNil)Nil)))
+ * Oke, write produces: (BinLeafTrueLeaf)
+ * Oke, write produces: (Cons(Bin(BinLeaf(Cons1Nil)Leaf)(Cons2Nil)(BinLeaf(Cons3Nil)(BinLeaf(Cons4(Cons5Nil))Leaf)))Nil)
+ * Oke, write produces: (Cons(Bin(BinLeaf(Cons1Nil)Leaf)(Cons2Nil)(BinLeaf(Cons3Nil)(Bin(BinLeaf(Cons4(Cons5Nil))Leaf)(Cons6(Cons7Nil))(BinLeaf(Cons8(Cons9Nil))Leaf))))Nil)
+ * Oke, write produces: Head
+ * Oke, write produces: Tail
+ * Oke, write produces: (7,True)
+ * Oke, write produces: (Head,(7,(ConsTailNil)))
+ * End of the tests.
+ */
+ 

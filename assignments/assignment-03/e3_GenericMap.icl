@@ -56,4 +56,8 @@ testeq4 = not (gEq{|*->*|} (\x y -> not ((x < y) || (y < x))) [1,2] [2,3]) // sh
 
 Start = [testmap1 == expmap1, testmap2 == expmap2, testmap3 == expmap3,
          testeq1, testeq2, testeq3, testeq4]
-	
+
+/*
+ * Output:
+ * [True,True,True,True,True,True,True]	
+ */
