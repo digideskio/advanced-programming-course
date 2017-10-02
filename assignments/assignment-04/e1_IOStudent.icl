@@ -1,13 +1,9 @@
 module e1_IOStudent
 
-import StdEnv, StdMaybe, monad
+import StdEnv, StdMaybe, Assignment04
 /*
- * Jordi Riemens    s4243064
- * Thomas Churchman s4206606
- *
- * Based on:
- * Pieter Koopman, pieter@cs.ru.nl
- * Advanced Programming, week 4
+    Pieter Koopman, pieter@cs.ru.nl
+    Advanced Programming, week 4
 */
 
 // ---- an IO monad with maybe results --- //
@@ -104,7 +100,10 @@ instance OrMonad IO where
 
 // ---- reading a student record --- //
 
-Start w = run f2 w
+getResult :: (IO a) *World -> Maybe a
+getResult m w = fst (unIO m {w=w, c=Nothing})
+
+Start w = getResult f3 w
 
 :: Student =
   { fname :: String
@@ -150,6 +149,12 @@ f2
     >>= \snum. rtrn {fname = rmNL fname, lname = rmNL lname, snum = snum}
     >>= write o toString)
     <|> write "failed to read a student"
+
+f3 :: IO Student
+f3 = pure (\fname. \lname. \snum. {fname = rmNL fname, lname = rmNL lname, snum = snum})
+    <*> (write "Your first name please: " *> read)
+    <*> (write "Your last name please: " *> read)
+    <*> (write "Your student number please: " *> read)
 
 rmNL :: String -> String
 rmNL string
