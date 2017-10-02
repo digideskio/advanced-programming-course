@@ -184,3 +184,24 @@ test a =
         s = write a ["\n"]
         r = read s
         jr = fromJust r
+        
+/*
+ * Output:
+ * Oke, write produces: True
+ * Oke, write produces: False
+ * Oke, write produces: 0
+ * Oke, write produces: 123
+ * Oke, write produces: -36
+ * Oke, write produces: (_Cons42_Nil)
+ * Oke, write produces: (_Cons0(_Cons1(_Cons2(_Cons3(_Cons4_Nil)))))
+ * Oke, write produces: (_Cons(_ConsTrue_Nil)(_Cons_Nil_Nil))
+ * Oke, write produces: (_Cons(_Cons(_Cons1_Nil)_Nil)(_Cons(_Cons(_Cons2_Nil)(_Cons(_Cons3(_Cons4_Nil))_Nil))(_Cons(_Cons_Nil_Nil)_Nil)))
+ * Oke, write produces: (BinLeafTrueLeaf)
+ * Oke, write produces: (_Cons(Bin(BinLeaf(_Cons1_Nil)Leaf)(_Cons2_Nil)(BinLeaf(_Cons3_Nil)(BinLeaf(_Cons4(_Cons5_Nil))Leaf)))_Nil)
+ * Oke, write produces: (_Cons(Bin(BinLeaf(_Cons1_Nil)Leaf)(_Cons2_Nil)(BinLeaf(_Cons3_Nil)(Bin(BinLeaf(_Cons4(_Cons5_Nil))Leaf)(_Cons6(_Cons7_Nil))(BinLeaf(_Cons8(_Cons9_Nil))Leaf))))_Nil)
+ * Oke, write produces: Head
+ * Oke, write produces: Tail
+ * Oke, write produces: (7,True)
+ * Oke, write produces: (Head,(7,(_ConsTail_Nil)))
+ * End of the tests.
+ */
