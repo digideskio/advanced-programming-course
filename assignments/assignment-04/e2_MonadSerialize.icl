@@ -1,6 +1,6 @@
 module e2_MonadSerialize
 
-import StdEnv, StdMaybe, monad
+import StdEnv, StdMaybe, Assignment04
 
 /*
  * Jordi Riemens    s4243064
@@ -23,16 +23,24 @@ unS :: (State s a) -> s -> (Maybe a,s)
 unS (S f) = f
 
 instance Functor (State s) where
-    fmap f s = fail
+    fmap f x = S \s0. case unS x s0 of
+         (Just x,  s1) = (Just (f x), s1)
+         (Nothing, s1) = (Nothing, s1)
 instance Applicative (State s) where
-    pure a = fail
-    (<*>) f x = fail
+    pure a = S \s0. (Just a, s0)
+    (<*>) f x = S \s0. case unS f s0 of
+         (Just f, s1) = (unS o fmap f) x s1
+         (Nothing, s1) = (Nothing, s1)
 instance fail (State s) where
-    fail = S \s.(Nothing,s)
+    fail = S \s0. (Nothing, s0)
 instance Monad (State s) where
-    bind a f = fail
+    bind x f = S \s0. case unS x s0 of
+         (Just x, s1) = (unS o f) x s1
+         (Nothing, s1) = (Nothing, s1)
 instance OrMonad (State s) where
-    (<|>) f g = fail
+    (<|>) f g = S \s0. case unS f s0 of
+        (Just x, s1) = (Just x, s1)
+        (Nothing, _) = unS g s0
 
 // ---
 
