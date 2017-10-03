@@ -111,7 +111,7 @@ instance serialize Int where
 
 instance serialize String where
     write s = wrt s
-    read = fail
+    read = rd
 
 instance serialize UNIT where
     write _ = fail
