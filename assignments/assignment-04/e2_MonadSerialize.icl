@@ -102,12 +102,12 @@ instance isUNIT UNIT where isUNIT _ = True
 instance isUNIT a    where isUNIT _ = False
 
 instance serialize Bool where
-  write b = fail
-  read = fail
+  write b = wrt b
+  read = match True <|> match False
 
 instance serialize Int where
-    write i = fail
-    read = fail
+    write i = wrt i
+    read = pred (\s. s == (toString o toInt) s) >>= (\s. rtrn (toInt s))
 
 instance serialize String where
     write s = wrt s
