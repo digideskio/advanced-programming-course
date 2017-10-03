@@ -44,22 +44,27 @@ instance OrMonad (State s) where
 
 // ---
 
-:: Serialized = Serialized
+:: Serialized :== [String]
 
 ser :: Serialized
-ser = Serialized
+ser = []
 
 toStrings :: Serialized -> [String]
-toStrings _ = ["to be done\n"]
+toStrings s = s
 
 :: Serialize a :== State Serialized a
 
 wrt :: a -> Serialize String | toString a
-wrt a = fail
+wrt a = S (\s. (Just undef, s ++ [toString a]))
 
 rd :: Serialize String
-rd = fail
-
+rd = S (
+    \s. 
+        case s of
+            [] = (Nothing, [])
+            [a:as] = (Just a, as)
+    )
+    
 match :: a -> Serialize a | toString a
 match a = fail
 
