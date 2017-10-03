@@ -66,10 +66,10 @@ rd = S (
     )
     
 match :: a -> Serialize a | toString a
-match a = rd >>= (\x. guard (toString a == x))
+match a = rd >>= (\x. if (toString a == x) (pure a) fail)
 
 pred :: (String->Bool) -> Serialize String
-pred f = rd >>= (\x. guard (f x))
+pred f = rd >>= (\x. if (f x) (pure x) fail)
 
 // ---
 
