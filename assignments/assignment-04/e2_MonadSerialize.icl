@@ -244,7 +244,7 @@ test a = toStrings (snd ((unS t) ser)) where
  t
      =   write a
     >>| read
-    >>= \b. guard (a == b)
-    >>| write "Oke "
+    >>= (\b. guard (a == b)
+    >>| write "Oke ")
     <|> write "Failure "
 
