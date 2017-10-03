@@ -114,21 +114,22 @@ instance serialize String where
     read = rd
 
 instance serialize UNIT where
-    write _ = fail
-    read = fail
+    write _ = pure undef
+    read = rtrn UNIT
 
 instance serializeCONS UNIT where
-    writeCons wa (CONS name a) = fail
-    readCons name ra = fail
+    writeCons wa (CONS name a) = pure undef
+    readCons name ra = rtrn (CONS name UNIT)
  
 instance serializeCONS a where
-    writeCons wa (CONS name a) = fail
-    readCons name ra =fail
+    writeCons wa (CONS name a) = wrt "(" >>| wrt name >>| wa a >>| wrt ")"
+    readCons name ra = match "(" >>| match name >>| (ra >>= (\a. rtrn (CONS name a))) >>= (\a. (match ")") >>| rtrn a)
  
 instance serialize2 EITHER where
-  write2 wa wb (LEFT  a) = fail
-  write2 wa wb (RIGHT b) = fail
-  read2 ra rb = fail
+  write2 wa wb (LEFT  a) = wa a
+  write2 wa wb (RIGHT b) = wb b
+  read2 ra rb =  ra >>= \a. rtrn (LEFT a)
+             <|> rb >>= \b. rtrn (RIGHT b)
 
 instance serialize2 PAIR where
   write2 wa wb (PAIR a b) = fail
