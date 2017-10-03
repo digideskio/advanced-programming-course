@@ -1,6 +1,6 @@
 module e2_MonadSerialize
 
-import StdEnv, StdMaybe, Assignment04
+import StdEnv, StdMaybe, Monad
 
 /*
  * Jordi Riemens    s4243064
