@@ -1,6 +1,6 @@
 module e1_IOStudent
 
-import StdEnv, StdMaybe, Assignment04
+import StdEnv, StdMaybe, Monad
 /*
     Pieter Koopman, pieter@cs.ru.nl
     Advanced Programming, week 4
