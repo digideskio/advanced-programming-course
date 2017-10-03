@@ -1,10 +1,17 @@
 module e1_IOStudent
 
 import StdEnv, StdMaybe, Monad
+
 /*
-    Pieter Koopman, pieter@cs.ru.nl
-    Advanced Programming, week 4
-*/
+ * Jordi Riemens    s4243064
+ * Thomas Churchman s4206606
+ *
+ * Based on:
+ * Examples for assignment 4 in AFP 2017
+ * Pieter Koopman, pieter@cs.ru.nl
+ * Advanced Programming, week 4
+ * September 2017
+ */
 
 // ---- an IO monad with maybe results --- //
 
