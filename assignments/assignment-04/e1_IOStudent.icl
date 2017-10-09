@@ -46,7 +46,7 @@ instance read String where
            s = rmNL line
         | size s > 0
             = (Just s,{w = w, c = Just c})
-            #! c = c <<< "String must be not empty "
+            #! c = c <<< "String must be not empty: "
                (line, c) = freadline c
                s = rmNL line
             | size s > 0
@@ -61,7 +61,7 @@ instance read Int where
         | b
         = (Just i, {w = w, c = Just c})
         #! (_, c) = freadline c
-           c = c <<< "An integer please "
+           c = c <<< "An integer please: "
            (b,i,c) = freadi c
         | b
         = (Just i,  {w = w, c = Just c})
