@@ -129,7 +129,7 @@ instance serialize2 EITHER where
   write2 wa wb (LEFT  a) = wa a
   write2 wa wb (RIGHT b) = wb b
   read2 ra rb =  (ra >>= \a. rtrn (LEFT a))
-             <|> (rb >>= \b. rtrn (RIGHT b))
+             <|> rb >>= \b. rtrn (RIGHT b)
 
 instance serialize2 PAIR where
   write2 wa wb (PAIR a b) = wa a >>| wb b
