@@ -248,3 +248,26 @@ test a = toStrings (snd ((unS t) ser)) where
     >>| write "OK\n")
     <|> write a
 
+/*
+ * Output:
+ * OK
+ * OK
+ * OK
+ * OK
+ * OK
+ * OK
+ * OK
+ * OK
+ * OK
+ * OK
+ * OK
+ * OK
+ * OK
+ * OK
+ * OK
+ * OK
+ * OK
+ * OK
+ * OK
+ * End of the tests.
+ */

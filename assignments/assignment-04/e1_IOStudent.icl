@@ -170,3 +170,12 @@ rmNL string
     = string % (0, len - 2)
     = string
 
+/*
+ * Output:
+ * Your first name please: James
+ * Your last name please:
+ * String must be not empty: Bond
+ * Your student number please: Double O Seven
+ * An integer please: 007
+ * (Just (Student "James" "Bond" 7))
+ */
