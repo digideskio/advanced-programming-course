@@ -118,8 +118,8 @@ instance serialize UNIT where
     read = rtrn UNIT
 
 instance serializeCONS UNIT where
-    writeCons wa (CONS name a) = pure undef
-    readCons name ra = rtrn (CONS name UNIT)
+    writeCons wa (CONS name a) = wrt name
+    readCons name ra = match name >>| rtrn (CONS name UNIT)
  
 instance serializeCONS a where
     writeCons wa (CONS name a) = wrt "(" >>| wrt name >>| wa a >>| wrt ")"
@@ -132,8 +132,8 @@ instance serialize2 EITHER where
              <|> rb >>= \b. rtrn (RIGHT b)
 
 instance serialize2 PAIR where
-  write2 wa wb (PAIR a b) = fail
-  read2 ra rb = fail
+  write2 wa wb (PAIR a b) = wa a >>| wb b
+  read2 ra rb = ra >>= \a. rb >>= \b. rtrn (PAIR a b)
 
 // ---
 
@@ -155,8 +155,8 @@ instance serialize [a] | serialize a where
  read    = read1  read
 
 instance serialize1 [] where
-    write1 writea l = fail
-    read1  reada = fail
+    write1 writea l = write2 (writeCons write) (writeCons (write2 writea (write1 writea))) (fromList l)
+    read1  reada = read2 (readCons NilString read) (readCons ConsString (read2 reada (read1 reada))) >>= \l. rtrn (toList l)
 // ---
 
 :: Bin a = Leaf | Bin (Bin a) a (Bin a)
@@ -180,12 +180,12 @@ instance == (Bin a) | == a where
   (==) _ _ = False
 
 instance serialize (Bin a) | serialize a where
-    write b = fail
-    read = fail
+    write b = write1 write b
+    read = read1 read
 
 instance serialize1 Bin where
-    write1 writea b = fail
-    read1  reada    = fail
+    write1 writea b = write2 (writeCons write) (writeCons (write2 (write1 writea) (write2 writea (write1 writea)))) (fromBin b)
+    read1  reada    = read2 (readCons LeafString read) (readCons BinString (read2 (read1 reada) (read2 reada (read1 reada)))) >>= \b. rtrn (toBin b)
 // ---
 
 :: Coin = Head | Tail
@@ -205,14 +205,14 @@ instance == Coin where
   (==) _    _    = False
 
 instance serialize Coin where
-    write c = fail
-    read    = fail
+    write c = write2 (writeCons write) (writeCons write) (fromCoin c)
+    read    = read2 (readCons "Head" read) (readCons "Tail" read) >>= \c. rtrn (toCoin c)
 
 // ---
 
 instance serialize (a,b) | serialize a & serialize b where
-    write (a,b) = fail
-    read = fail
+    write (a,b) = wrt "(" >>| write a >>| wrt "," >>| write b >>| wrt ")"
+    read = match "(" >>| read >>= \a. match "," >>| read >>= \b. match ")" >>| rtrn (a,b)
 
 // ---
 
