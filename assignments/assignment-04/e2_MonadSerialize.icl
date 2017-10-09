@@ -128,8 +128,8 @@ instance serializeCONS a where
 instance serialize2 EITHER where
   write2 wa wb (LEFT  a) = wa a
   write2 wa wb (RIGHT b) = wb b
-  read2 ra rb =  ra >>= \a. rtrn (LEFT a)
-             <|> rb >>= \b. rtrn (RIGHT b)
+  read2 ra rb =  (ra >>= \a. rtrn (LEFT a))
+             <|> (rb >>= \b. rtrn (RIGHT b))
 
 instance serialize2 PAIR where
   write2 wa wb (PAIR a b) = wa a >>| wb b
@@ -245,6 +245,6 @@ test a = toStrings (snd ((unS t) ser)) where
      =   write a
     >>| read
     >>= (\b. guard (a == b)
-    >>| write "OK")
+    >>| write "OK\n")
     <|> write a
 
