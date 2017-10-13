@@ -43,11 +43,15 @@ updateStudentTask = updateInformation "Update the student" [] undef
 selectFavoriteStudentTask :: Task Student
 selectFavoriteStudentTask = enterChoice "Select your favorite student" [ChooseFromGrid id] students
 
+selectFavoriteStudentOnlyDisplayingNameTask :: Task Student
+selectFavoriteStudentOnlyDisplayingNameTask = enterChoice "Select your favorite student" [ChooseFromGrid (\s -> s.Student.name)] students
+
 tasks = [
     workflow "Students/Enter a student" "Enter student" enterStudentTask,
     workflow "Students/Enter a list of students" "Enter students" enterListOfStudentsTask,
     workflow "Students/Update the student" "Update student" updateStudentTask,
-    workflow "Students/Select your favorite student" "Select favorite student" selectFavoriteStudentTask
+    workflow "Students/Select your favorite student" "Select favorite student" selectFavoriteStudentTask,
+    workflow "Students/Select your favorite student using only their name" "Select favorite student only name" selectFavoriteStudentOnlyDisplayingNameTask
     ]
 
 Start w = startEngine [publish "/" (\_ -> manageWorklist tasks)] w
@@ -57,6 +61,7 @@ task1 = enterStudentTask
 task2 = enterListOfStudentsTask
 task3 = updateStudentTask
 task4 = selectFavoriteStudentTask
+task5 = selectFavoriteStudentOnlyDisplayingNameTask
 
 students :: [Student]
 students =
