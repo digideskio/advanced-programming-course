@@ -31,7 +31,13 @@ derive class iTask Student, BaMa
 enterStudentTask :: Task Student
 enterStudentTask = enterInformation "Enter a student" []
 
-tasks = [workflow "Students/Enter a student" "Enter student" enterStudentTask]
+enterListOfStudentsTask :: Task [Student]
+enterListOfStudentsTask = enterInformation "Enter a list of students" []
+
+tasks = [
+    workflow "Students/Enter a student" "Enter student" enterStudentTask,
+    workflow "Students/Enter a list of students" "Enter students" enterListOfStudentsTask
+    ]
 
 Start w = startEngine [publish "/" (\_ -> manageWorklist tasks)] w
 
