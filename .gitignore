@@ -3,5 +3,8 @@ Clean System Files
 *.prj
 *.prp
 *.zip
+
+# iTasks
 *-sapl
 *-www
+*-data
