@@ -40,10 +40,14 @@ undef = undef
 updateStudentTask :: Task Student
 updateStudentTask = updateInformation "Update the student" [] undef
 
+selectFavoriteStudentTask :: Task Student
+selectFavoriteStudentTask = enterChoice "Select your favorite student" [ChooseFromGrid id] students
+
 tasks = [
     workflow "Students/Enter a student" "Enter student" enterStudentTask,
     workflow "Students/Enter a list of students" "Enter students" enterListOfStudentsTask,
-    workflow "Students/Update the student" "Update student" updateStudentTask
+    workflow "Students/Update the student" "Update student" updateStudentTask,
+    workflow "Students/Select your favorite student" "Select favorite student" selectFavoriteStudentTask
     ]
 
 Start w = startEngine [publish "/" (\_ -> manageWorklist tasks)] w
