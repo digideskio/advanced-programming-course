@@ -3,3 +3,5 @@ Clean System Files
 *.prj
 *.prp
 *.zip
+*-sapl
+*-www
