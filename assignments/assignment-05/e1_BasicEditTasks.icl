@@ -41,6 +41,10 @@ tasks = [
 
 Start w = startEngine [publish "/" (\_ -> manageWorklist tasks)] w
 
+// For full compliance with the excercise ;-)
+task1 = enterStudentTask
+task2 = enterListOfStudentsTask
+
 students :: [Student]
 students =
 	[{name = "Alice"
