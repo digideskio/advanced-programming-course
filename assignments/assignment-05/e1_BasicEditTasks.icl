@@ -34,9 +34,16 @@ enterStudentTask = enterInformation "Enter a student" []
 enterListOfStudentsTask :: Task [Student]
 enterListOfStudentsTask = enterInformation "Enter a list of students" []
 
+// Ground
+undef = undef
+
+updateStudentTask :: Task Student
+updateStudentTask = updateInformation "Update the student" [] undef
+
 tasks = [
     workflow "Students/Enter a student" "Enter student" enterStudentTask,
-    workflow "Students/Enter a list of students" "Enter students" enterListOfStudentsTask
+    workflow "Students/Enter a list of students" "Enter students" enterListOfStudentsTask,
+    workflow "Students/Update the student" "Update student" updateStudentTask
     ]
 
 Start w = startEngine [publish "/" (\_ -> manageWorklist tasks)] w
