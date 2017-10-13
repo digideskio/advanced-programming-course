@@ -25,7 +25,12 @@ import iTasks
 
 :: BaMa = Bachelor | Master
 
-Start w = 42
+derive class iTask Student, BaMa
+
+enterStudentTask :: Task Student
+enterStudentTask = enterInformation "Enter a student" []
+
+Start w = startEngine enterStudentTask w
 
 students :: [Student]
 students =
