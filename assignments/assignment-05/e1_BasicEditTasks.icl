@@ -55,6 +55,8 @@ Start w = startEngine [publish "/" (\_ -> manageWorklist tasks)] w
 // For full compliance with the excercise ;-)
 task1 = enterStudentTask
 task2 = enterListOfStudentsTask
+task3 = updateStudentTask
+task4 = selectFavoriteStudentTask
 
 students :: [Student]
 students =
