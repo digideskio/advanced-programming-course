@@ -1,7 +1,5 @@
 module e1_BasicEditTasks
 
-import iTasks
-
 /*
  * Jordi Riemens    s4243064
  * Thomas Churchman s4206606
@@ -15,6 +13,9 @@ import iTasks
  *   You can also use the -sdk commandline flag to set the path
  * - check Project Options -> Profiling -> Dynamics to prevent recompilation
 */
+
+import iTasks
+import iTasks.API.Extensions.Admin.WorkflowAdmin
 
 :: Student =
 	{ name :: String
@@ -30,7 +31,9 @@ derive class iTask Student, BaMa
 enterStudentTask :: Task Student
 enterStudentTask = enterInformation "Enter a student" []
 
-Start w = startEngine enterStudentTask w
+tasks = [workflow "Students/Enter a student" "Enter student" enterStudentTask]
+
+Start w = startEngine [publish "/" (\_ -> manageWorklist tasks)] w
 
 students :: [Student]
 students =
