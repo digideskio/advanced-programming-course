@@ -42,8 +42,28 @@ administratorTask :: (Shared [Question]) -> Task ()
 administratorTask questions = updateSharedInformation "Administrator menu - Choose an item to edit" [] questions
                    >>= \_ -> return ()
 
+// Ground
+undef = undef
+
+studentTask :: (Shared [Question]) -> Task ()
+studentTask questions = get questions 
+             >>= \questions -> answerQuestions questions []
+             >>= \answers -> gradeAnswers questions answers
+    where
+    answerQuestions :: [Question] [Int] -> Task [Int]
+    answerQuestions [] answers = return answers
+    answerQuestions [q:qs] answers = enterChoice q.question [ChooseFromGrid (\answer -> q.answers !! answer)] [0 .. length q.answers - 1]
+                     >>= \answer -> answerQuestions qs (answers ++ [answer])
+    gradeAnswers :: [Question] [Int] -> Task ()
+    gradeAnswers questions answers
+                  # numCorrect = sum [if (q.correct == a) 1 0 \\ q <- questions & a <- answers]
+                    numQuestions = length questions
+                    questionQuestions = if (numQuestions == 1) "question" "questions" 
+                  = viewInformation "Your score" [] ("You answered " +++ toString numCorrect +++ " out of " +++ toString numQuestions +++ " " +++ questionQuestions +++ " correctly.")
+                  >>= \_ -> return ()
+
 mainTask :: Task ()
-mainTask = withShared mockquestions administratorTask
+mainTask = withShared mockquestions studentTask
 // TODO change mockquestions to [] when done testing
 
 Start w = startEngine mainTask w
