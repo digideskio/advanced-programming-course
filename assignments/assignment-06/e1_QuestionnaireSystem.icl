@@ -37,9 +37,13 @@ teacherTask questions = enterChoiceWithShared "Teacher menu - Choose an item to 
                  ]
           recurse task = task ||- teacherTask questions
           applyQ f = upd f questions
+          
+administratorTask :: (Shared [Question]) -> Task ()
+administratorTask questions = updateSharedInformation "Administrator menu - Choose an item to edit" [] questions
+                   >>= \_ -> return ()
 
 mainTask :: Task ()
-mainTask = withShared mockquestions teacherTask
+mainTask = withShared mockquestions administratorTask
 // TODO change mockquestions to [] when done testing
 
 Start w = startEngine mainTask w
