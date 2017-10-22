@@ -16,9 +16,6 @@ import iTasks
 
 derive class iTask Question
 
-mockquestions :: [Question]
-mockquestions = [{question="Pick A", answers=["A","B","C"], correct=0}, {question="Don't pick A", answers=["A","B"], correct=1} ]
-
 // mapRead pattern from Examples/iTasks/BasicAPIExamples.icl
 teacherTask :: (Shared [Question]) -> Task ()
 teacherTask questions = enterChoiceWithShared "Teacher menu - Choose an item to edit" [ChooseFromGrid id] (mapRead (\qs -> [(i,q) \\ q <- qs & i <- [0..]]) questions)
@@ -27,7 +24,7 @@ teacherTask questions = enterChoiceWithShared "Teacher menu - Choose an item to 
                  , OnAction (Action "Edit")   (hasValue (\(i,p) -> recurse (confirmQuitEditor i (updateInformation "Edit question" [] p))))
                  , OnAction (Action "Clear")  (hasValue (\(i,_) -> recurse (confirmQuitEditor i (enterInformation "Edit question" []))))
                  , OnAction (Action "First")  (always             (recurse (applyQ (insertAt 0 defaultValue))))
-                 , OnAction (Action "Quit")   (always (return ()))
+                 , OnAction (Action "Quit")   (always             (return ()))
                  ]
     where confirmQuitEditor i task = let update = \p -> applyQ (updateAt i p) in 
                  task >>*
@@ -41,9 +38,6 @@ teacherTask questions = enterChoiceWithShared "Teacher menu - Choose an item to 
 administratorTask :: (Shared [Question]) -> Task ()
 administratorTask questions = updateSharedInformation "Administrator menu - Choose an item to edit" [] questions
                    >>= \_ -> return ()
-
-// Ground
-undef = undef
 
 studentTask :: (Shared [Question]) -> Task ()
 studentTask questions = get questions 
@@ -62,8 +56,18 @@ studentTask questions = get questions
                   = viewInformation "Your score" [] ("You answered " +++ toString numCorrect +++ " out of " +++ toString numQuestions +++ " " +++ questionQuestions +++ " correctly.")
                   >>= \_ -> return ()
 
+loginTask :: (Shared [Question]) -> Task ()
+loginTask questions = enterInformation "Enter your username" [] >>* [OnAction ActionContinue (hasValue (taskSelect questions))] >>* [OnValue (ifStable (\_ -> loginTask questions))]
+    where taskSelect questions username
+           | isMember username ["Rinus", "Pieter"] = teacherTask questions
+           | username == "admin" = administratorTask questions
+           | otherwise = studentTask questions
+
+mockquestions :: [Question]
+mockquestions = [{question="Pick A", answers=["A","B","C"], correct=0}, {question="Don't pick A", answers=["A","B"], correct=1} ]
+
 mainTask :: Task ()
-mainTask = withShared mockquestions studentTask
-// TODO change mockquestions to [] when done testing
+mainTask = withShared [] loginTask
+// N.B. [] can be changed to mockquestions for your testing convenience
 
 Start w = startEngine mainTask w
