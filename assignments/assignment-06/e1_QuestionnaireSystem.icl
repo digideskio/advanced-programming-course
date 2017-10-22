@@ -48,7 +48,7 @@ undef = undef
 studentTask :: (Shared [Question]) -> Task ()
 studentTask questions = get questions 
              >>= \questions -> answerQuestions questions []
-             >>= \answers -> gradeAnswers questions answers
+             >>* [OnValue (ifStable (\answers -> gradeAnswers questions answers))]
     where
     answerQuestions :: [Question] [Int] -> Task [Int]
     answerQuestions [] answers = return answers
