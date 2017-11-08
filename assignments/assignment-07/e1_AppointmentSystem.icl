@@ -47,9 +47,9 @@ makeAppointment appointments = get currentUser
 
 tasks :: (Shared [Appointment]) -> [Workflow]
 tasks appointments = [
-    restrictedWorkflow (adminTask +++ "Manage users") "Manage system users..." ["admin"] manageUsers
-  , workflow (appointmentTask +++ "View appointments") "View your appointments" (viewAppointments appointments)
-  , workflow (appointmentTask +++ "Make appointments") "Make new appointment" (makeAppointment appointments)
+    restrictedTransientWorkflow (adminTask +++ "Manage users") "Manage system users..." ["admin"] (forever manageUsers)
+  , transientWorkflow (appointmentTask +++ "View appointments") "View your appointments" (viewAppointments appointments)
+  , transientWorkflow (appointmentTask +++ "Make appointments") "Make new appointment" (makeAppointment appointments)
   ]
 
 
