@@ -39,7 +39,13 @@ viewAppointments appointments = get currentUser
 makeAppointment :: (Shared [Appointment]) -> Task ()
 makeAppointment appointments = get currentUser 
         >>= \me             -> get currentDateTime 
-        >>= \now            -> enterInformation "Make new appointment" []
+        >>= \now            -> get users
+        >>= \users -> ((      enterInformation "Appointment title" [] 
+                        -&&-  enterInformation "Starting time" [] 
+                       )-&&-( enterInformation "Duration" [] 
+                        -&&-  enterMultipleChoice "Choose participants" [] users
+                      )) 
+                      @ (\((title,when),(duration,participants)) -> {title=title, when=when, duration=duration, owner=me, participants=participants})
         >>*                  [ OnAction (Action "Make") (hasValue (\app -> upd (\apps -> [app : apps]) appointments >>= const))
                              , OnAction (Action "Cancel") (always (return ()))
                              ]
