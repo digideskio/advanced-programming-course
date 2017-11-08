@@ -47,7 +47,7 @@ makeAppointment = get currentUser
         >>= \users ->  ((      enterInformation "Appointment title" [] 
                          -&&-  enterInformation "Starting time" [] 
                         )-&&-( enterInformation "Duration" [] 
-                         -&&-  enterMultipleChoice "Choose participants" [] users
+                         -&&-  enterMultipleChoice "Choose participants" [ChooseFromCheckGroup (\s -> s)] users
                        )) 
                        @ (\((title,when),(duration,participants)) -> {title=title, when=when, duration=duration, owner=me, participants=participants})
         >>*                  [ OnAction (Action "Make") (hasValue (\app -> upd (\apps -> [app : apps]) schedule >>= const))
