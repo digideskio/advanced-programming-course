@@ -53,4 +53,7 @@ tasks appointments = [
   ]
 
 
-Start w = startEngine [publish "/" (\_ -> withShared [] (\apps -> loginAndManageWorkList "Appointments" (tasks apps)))] w
+Start w = startEngineWithOptions 
+    (\cli options.defaultEngineCLIOptions cli {options & sessionTime = 1000000000})
+    [publish "/" (\_ -> withShared [] (\apps -> loginAndManageWorkList "Appointments" (tasks apps)))]
+    w
