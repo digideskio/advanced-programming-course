@@ -25,6 +25,8 @@ derive class iTask Appointment
 undef = undef
 const = \_ -> return ()
 
+// Task hierarchy
+
 adminTask   :== "Admin/"
 appointmentTask :== "Appointments/"
 
@@ -45,9 +47,10 @@ makeAppointment appointments = get currentUser
 
 tasks :: (Shared [Appointment]) -> [Workflow]
 tasks appointments = [
-    workflow (adminTask +++ "Manage users") "Manage system users..." manageUsers
+    restrictedWorkflow (adminTask +++ "Manage users") "Manage system users..." ["admin"] manageUsers
   , workflow (appointmentTask +++ "View appointments") "View your appointments" (viewAppointments appointments)
   , workflow (appointmentTask +++ "Make appointments") "Make new appointment" (makeAppointment appointments)
-    ]
+  ]
+
 
 Start w = startEngine [publish "/" (\_ -> withShared [] (\apps -> loginAndManageWorkList "Appointments" (tasks apps)))] w
