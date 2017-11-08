@@ -50,7 +50,7 @@ makeAppointment = get currentUser
                          -&&-  enterMultipleChoice "Choose participants" [] users
                        )) 
                        @ (\((title,when),(duration,participants)) -> {title=title, when=when, duration=duration, owner=me, participants=participants})
-        >>*                  [ OnAction (Action "Make") (hasValue (\app -> upd (\apps -> [app : apps]) appointments >>= const))
+        >>*                  [ OnAction (Action "Make") (hasValue (\app -> upd (\apps -> [app : apps]) schedule >>= const))
                              , OnAction (Action "Cancel") (always (return ()))
                              ]
 
