@@ -5,7 +5,6 @@ module e1_AppointmentSystem
  * Thomas Churchman s4206606
  */
 
-import _SystemArray
 import iTasks
 
 :: Appointment =
@@ -22,9 +21,11 @@ derive class iTask Appointment
 // Ground
 undef = undef
 
+adminTask   :== "Admin/"
+
 tasks :: [Workflow]
 tasks = [
-    
+    workflow (adminTask +++ "Manage users") "Manage system users..." manageUsers
     ]
 
 Start w = startEngine [publish "/" (\_ -> loginAndManageWorkList "Appointments"  tasks)] w
