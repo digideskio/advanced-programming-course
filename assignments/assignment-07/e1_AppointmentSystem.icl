@@ -62,7 +62,23 @@ makeAppointment = get currentUser
 
 addAppointmentToShare :: Appointment -> Task ()
 addAppointmentToShare appointment = upd (\appointments -> [appointment : appointments]) schedule
-                                    >>= const
+                                    >>= \_ -> addAppointmentTasks appointment appointment.participants
+
+addAppointmentTasks :: Appointment [User] -> Task ()
+addAppointmentTasks appointment [] = return ()
+addAppointmentTasks appointment [participant:participants] = 
+        assign
+            (workerAttributes participant
+                         [ ("title",      appointment.Appointment.title)
+                         , ("createdBy",  toString (toUserConstraint appointment.owner))
+                         , ("createdAt",  toString appointment.Appointment.when)
+                         //, ("completeBefore", toString (appointment.Appointment.when + appointment.Appointment.duration))
+                         , ("completeBefore", toString (appointment.Appointment.when))
+                         , ("priority",   toString 5)
+                         , ("createdFor", toString (toUserConstraint participant))
+                         ]) 
+            (viewInformation "Placeholder" [] "Placeholder")
+    >>= \_ -> addAppointmentTasks appointment participants
 
 tasks :: [Workflow]
 tasks = [
