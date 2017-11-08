@@ -46,7 +46,7 @@ makeAppointment = get currentUser
         >>= \now            -> get users
         >>= \users ->  ((      enterInformation "Appointment title" [] 
                          -&&-  updateInformation "Starting time" [] (nextHour now)
-                        )-&&-( updateInformation "Duration" [] {hour=1, min=0, sec=0}
+                        )-&&-( updateInformation "Duration" [] {Time|hour=1, min=0, sec=0}
                          -&&-  enterMultipleChoice "Choose participants" [ChooseFromCheckGroup (\s -> s)] users
                        )) 
                        @ (\((title,when),(duration,participants)) -> {title=title, when=when, duration=duration, owner=me, participants=participants})
@@ -56,7 +56,7 @@ makeAppointment = get currentUser
                              , OnAction (Action "Cancel") (always (return ()))
                              ]
         where nextHour :: DateTime -> DateTime
-              nextHour now = {DateTime | now & DateTime.hour=now.DateTime.hour+1, min=0, sec=0}
+              nextHour now = {DateTime|now&hour=(now.DateTime.hour+1), min=0, sec=0}
 
 addAppointmentToShare :: Appointment -> Task ()
 addAppointmentToShare appointment = upd (\appointments -> [appointment : appointments]) schedule
