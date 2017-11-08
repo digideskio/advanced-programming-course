@@ -30,30 +30,33 @@ const = \_ -> return ()
 adminTask   :== "Admin/"
 appointmentTask :== "Appointments/"
 
-viewAppointments :: (Shared [Appointment]) -> Task ()
-viewAppointments appointments = get currentUser 
+// Shared data
+schedule :: Shared [Appointment]
+schedule = sharedStore "schedule" []
+
+viewAppointments :: Task ()
+viewAppointments = get currentUser 
         >>= \me              -> get currentDateTime 
-        >>= \now             -> viewSharedInformation "Appointment viewer" [ViewAs (filter (\app -> (isMember me app.participants && app.when > now)))] appointments
+        >>= \now             -> viewSharedInformation "Appointment viewer" [ViewAs (filter (\app -> (isMember me app.participants && app.when > now)))] schedule
         >>=                     const
 
-makeAppointment :: (Shared [Appointment]) -> Task ()
-makeAppointment appointments = get currentUser 
+makeAppointment :: Task ()
+makeAppointment = get currentUser 
         >>= \me             -> get currentDateTime 
         >>= \now            -> enterInformation "Make new appointment" []
-        >>*                  [ OnAction (Action "Make") (hasValue (\app -> upd (\apps -> [app : apps]) appointments >>= const))
+        >>*                  [ OnAction (Action "Make") (hasValue (\app -> upd (\apps -> [app : apps]) schedule >>= const))
                              , OnAction (Action "Cancel") (always (return ()))
                              ]
-              
 
-tasks :: (Shared [Appointment]) -> [Workflow]
-tasks appointments = [
+tasks :: [Workflow]
+tasks = [
     restrictedTransientWorkflow (adminTask +++ "Manage users") "Manage system users..." ["admin"] (forever manageUsers)
-  , transientWorkflow (appointmentTask +++ "View appointments") "View your appointments" (viewAppointments appointments)
-  , transientWorkflow (appointmentTask +++ "Make appointments") "Make new appointment" (makeAppointment appointments)
+  , transientWorkflow (appointmentTask +++ "View appointments") "View your appointments" viewAppointments
+  , transientWorkflow (appointmentTask +++ "Make appointments") "Make new appointment" makeAppointment
   ]
 
 
 Start w = startEngineWithOptions 
     (\cli options.defaultEngineCLIOptions cli {options & sessionTime = 1000000000})
-    [publish "/" (\_ -> withShared [] (\apps -> loginAndManageWorkList "Appointments" (tasks apps)))]
+    [publish "/" (\_ -> loginAndManageWorkList "Appointments" tasks)]
     w
