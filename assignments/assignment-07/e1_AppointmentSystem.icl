@@ -21,11 +21,13 @@ derive class iTask Appointment
 // Ground
 undef = undef
 
+// Task hierarchy
+
 adminTask   :== "Admin/"
 
 tasks :: [Workflow]
 tasks = [
-    workflow (adminTask +++ "Manage users") "Manage system users..." manageUsers
+    restrictedWorkflow (adminTask +++ "Manage users") "Manage system users..." ["admin"] manageUsers
     ]
 
 Start w = startEngine [publish "/" (\_ -> loginAndManageWorkList "Appointments"  tasks)] w
