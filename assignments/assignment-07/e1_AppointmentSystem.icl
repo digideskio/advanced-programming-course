@@ -11,6 +11,7 @@ import iTasks.Extensions.DateTime
 
 :: Appointment =
     {
+        id           :: Int,
         title        :: String,
         when         :: DateTime,
         duration     :: Time,
@@ -18,8 +19,18 @@ import iTasks.Extensions.DateTime
         participants :: [User]
     }
 
+:: Proposal = 
+    {
+        id       :: Int,
+        title    :: String,
+        when     :: [DateTime],
+        duration :: Time,
+        owner    :: User,
+        participants :: [User]
+    }
 
 derive class iTask Appointment
+derive class iTask Proposal
 
 // Ground
 undef = undef
@@ -34,22 +45,34 @@ appointmentTask :== "Appointments/"
 schedule :: Shared [Appointment]
 schedule = sharedStore "schedule" []
 
+proposals :: Shared [Proposal]
+proposals = sharedStore "proposals" []
+
+id :: Shared Int
+id = sharedStore "idIncrement" 0
+
+getNextID :: Task Int
+getNextID = get id
+            >>= \id` -> set (id` + 1) id
+            >>= (\_ -> return id`)
+
 viewAppointments :: Task ()
 viewAppointments = get currentUser 
         >>= \me              -> get currentDateTime 
-        >>= \now             -> viewSharedInformation "Appointment viewer" [ViewAs (filter (\app -> (isMember me app.participants && app.when > now)))] schedule
+        >>= \now             -> viewSharedInformation "Appointment viewer" [ViewAs (filter (\app -> (isMember me app.Appointment.participants && app.Appointment.when > now)))] schedule
         >>=                     const
 
 makeAppointment :: Task ()
 makeAppointment = get currentUser 
         >>= \me             -> get currentDateTime 
-        >>= \now            -> get users
+        >>= \now            -> getNextID
+        >>= \id             -> get users
         >>= \users ->  ((      enterInformation "Appointment title" [] 
                          -&&-  updateInformation "Starting time" [] (nextHour now)
                         )-&&-( updateInformation "Duration" [] {Time|hour=1, min=0, sec=0}
                          -&&-  enterMultipleChoice "Choose participants" [ChooseFromCheckGroup (\s -> s)] users
                        )) 
-                       @ (\((title,when),(duration,participants)) -> {title=title, when=when, duration=duration, owner=me, participants=participants})
+                       @ (\((title,when),(duration,participants)) -> {Appointment|id=id, title=title, when=when, duration=duration, owner=me, participants=participants})
         >>*                  [ OnAction (Action "Make") (hasValue (\appointment -> addAppointmentToShare appointment
                                >>= \_ -> viewInformation "Success" [] "The appointment has been added."
                                >>= \_ -> makeAppointment))
@@ -60,7 +83,7 @@ makeAppointment = get currentUser
 
 addAppointmentToShare :: Appointment -> Task ()
 addAppointmentToShare appointment = upd (\appointments -> [appointment : appointments]) schedule
-                                    >>= \_ -> addAppointmentTasks appointment appointment.participants
+                                    >>= \_ -> addAppointmentTasks appointment appointment.Appointment.participants
 
 addAppointmentTasks :: Appointment [User] -> Task ()
 addAppointmentTasks appointment [] = return ()
@@ -68,7 +91,7 @@ addAppointmentTasks appointment [participant:participants] =
         assign
             (workerAttributes participant
                          [ ("title",      appointment.Appointment.title)
-                         , ("createdBy",  toString (toUserConstraint appointment.owner))
+                         , ("createdBy",  toString (toUserConstraint appointment.Appointment.owner))
                          , ("createdAt",  toString appointment.Appointment.when)
                          //, ("completeBefore", toString (appointment.Appointment.when + appointment.Appointment.duration))
                          , ("completeBefore", toString (appointment.Appointment.when))
