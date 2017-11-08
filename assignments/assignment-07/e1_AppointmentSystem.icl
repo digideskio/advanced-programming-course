@@ -50,11 +50,17 @@ makeAppointment = get currentUser
                          -&&-  enterMultipleChoice "Choose participants" [ChooseFromCheckGroup (\s -> s)] users
                        )) 
                        @ (\((title,when),(duration,participants)) -> {title=title, when=when, duration=duration, owner=me, participants=participants})
-        >>*                  [ OnAction (Action "Make") (hasValue (\app -> upd (\apps -> [app : apps]) schedule >>= const))
+        >>*                  [ OnAction (Action "Make") (hasValue (\appointment -> addAppointmentToShare appointment
+                               >>= \_ -> viewInformation "Success" [] "The appointment has been added."
+                               >>= \_ -> makeAppointment))
                              , OnAction (Action "Cancel") (always (return ()))
                              ]
         where nextHour :: DateTime -> DateTime
               nextHour now = {DateTime | now & DateTime.hour=now.DateTime.hour+1, min=0, sec=0}
+
+addAppointmentToShare :: Appointment -> Task ()
+addAppointmentToShare appointment = upd (\appointments -> [appointment : appointments]) schedule
+                                    >>= const
 
 tasks :: [Workflow]
 tasks = [
