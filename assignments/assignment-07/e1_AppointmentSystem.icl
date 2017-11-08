@@ -5,9 +5,9 @@ module e1_AppointmentSystem
  * Thomas Churchman s4206606
  */
 
-import _SystemArray
 import iTasks
 import iTasks.Extensions.DateTime
+import System.Time
 
 :: Appointment =
     {
@@ -24,6 +24,10 @@ derive class iTask Appointment
 // Ground
 undef = undef
 const = \_ -> return ()
+
+addTime :: DateTime Time -> DateTime
+addTime base added = timestampToGmDateTime (Timestamp (unTimestamp (utcDateTimeToTimestamp base) + 3600*added.Time.hour + 60*added.Time.min + added.Time.sec))
+    where unTimestamp (Timestamp x) = x
 
 // Task hierarchy
 
@@ -45,7 +49,7 @@ makeAppointment = get currentUser
         >>= \me             -> get currentDateTime 
         >>= \now            -> get users
         >>= \users ->  ((      enterInformation "Appointment title" [] 
-                         -&&-  updateInformation "Starting time" [] (nextHour now)
+                         -&&-  updateInformation "Starting time" [] (addTime now {Time|hour=1, min=(0-now.DateTime.min), sec=(0-now.DateTime.sec)})
                         )-&&-( updateInformation "Duration" [] {Time|hour=1, min=0, sec=0}
                          -&&-  enterMultipleChoice "Choose participants" [ChooseFromCheckGroup (\s -> s)] users
                        )) 
@@ -55,8 +59,6 @@ makeAppointment = get currentUser
                                >>= \_ -> makeAppointment))
                              , OnAction (Action "Cancel") (always (return ()))
                              ]
-        where nextHour :: DateTime -> DateTime
-              nextHour now = {DateTime|now&hour=(now.DateTime.hour+1), min=0, sec=0}
 
 addAppointmentToShare :: Appointment -> Task ()
 addAppointmentToShare appointment = upd (\appointments -> [appointment : appointments]) schedule
