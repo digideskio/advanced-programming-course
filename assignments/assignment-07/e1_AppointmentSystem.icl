@@ -5,7 +5,9 @@ module e1_AppointmentSystem
  * Thomas Churchman s4206606
  */
 
+import _SystemArray
 import iTasks
+import iTasks.Extensions.DateTime
 
 :: Appointment =
     {
@@ -16,16 +18,36 @@ import iTasks
         participants :: [User]
     }
 
+
 derive class iTask Appointment
 
 // Ground
 undef = undef
+const = \_ -> return ()
 
 adminTask   :== "Admin/"
+appointmentTask :== "Appointments/"
 
-tasks :: [Workflow]
-tasks = [
+viewAppointments :: (Shared [Appointment]) -> Task ()
+viewAppointments appointments = get currentUser 
+        >>= \me              -> get currentDateTime 
+        >>= \now             -> viewSharedInformation "Appointment viewer" [ViewAs (filter (\app -> (isMember me app.participants && app.when > now)))] appointments
+        >>=                     const
+
+makeAppointment :: (Shared [Appointment]) -> Task ()
+makeAppointment appointments = get currentUser 
+        >>= \me             -> get currentDateTime 
+        >>= \now            -> enterInformation "Make new appointment" []
+        >>*                  [ OnAction (Action "Make") (hasValue (\app -> upd (\apps -> [app : apps]) appointments >>= const))
+                             , OnAction (Action "Cancel") (always (return ()))
+                             ]
+              
+
+tasks :: (Shared [Appointment]) -> [Workflow]
+tasks appointments = [
     workflow (adminTask +++ "Manage users") "Manage system users..." manageUsers
+  , workflow (appointmentTask +++ "View appointments") "View your appointments" (viewAppointments appointments)
+  , workflow (appointmentTask +++ "Make appointments") "Make new appointment" (makeAppointment appointments)
     ]
 
-Start w = startEngine [publish "/" (\_ -> loginAndManageWorkList "Appointments"  tasks)] w
+Start w = startEngine [publish "/" (\_ -> withShared [] (\apps -> loginAndManageWorkList "Appointments" (tasks apps)))] w
