@@ -172,7 +172,9 @@ chooseDateTimes =              enterInformation "Choose proposed dates" []
         >>* [OnAction (Action "Choose times") (ifValue (not o isEmpty) (\dates -> updateDateTimes dates (map (\_ -> []) dates)))]
     where updateDateTimes :: [Date] [[Time]] -> Task [DateTime]
           updateDateTimes dates times = 
-                               allTasks (zipWith (\date -> updateInformation ("Proposed times for " +++ toString date) []) dates times)
+                               if (length dates > 1)
+                                   (allTasks (zipWith (\date -> updateInformation ("Proposed times for " +++ toString date) []) dates times))
+                                   (updateInformation ("Proposed times for " +++ toString (dates!!0)) [] [] >>= \times -> return [times]) // Hacky solution to solve "hd of []" when only one date is presented to allTasks
                         >>*  [ OnAction (Action "Propose") (ifValue (all (not o isEmpty)) (\times -> return (combineDateTimes dates times)))
                              , OnAction (Action "Copy times from first date") (ifValue (not o isEmpty o hd) (\times -> updateDateTimes dates (map (\_ -> hd times) dates)))
                              ]
