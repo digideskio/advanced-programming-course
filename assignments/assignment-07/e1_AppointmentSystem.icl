@@ -164,12 +164,9 @@ makeProposal = get currentUser
                           -&&- updateInformation "Duration" [] {Time|hour=1, min=0, sec=0}
                          )-&&- enterMultipleChoice "Choose participants" [ChooseFromCheckGroup (\s -> s)] users
                        )
-        >>= \((ttl,dur),ps) -> chooseDateTimes 
+        >>= \((ttl,dur),ps) -> enterInformation "Choose proposed dates" []
+        >>* [OnAction (Action "Choose times") (ifValue (not o isEmpty) (\dates -> updateDateTimes dates (map (\_ -> []) dates)))] 
         >>= \times          -> addProposalToShare {Proposal | id=id, title=ttl, when=times, duration=dur, owner=me, participants=ps}
-
-chooseDateTimes :: Task [DateTime]
-chooseDateTimes =              enterInformation "Choose proposed dates" []
-        >>* [OnAction (Action "Choose times") (ifValue (not o isEmpty) (\dates -> updateDateTimes dates (map (\_ -> []) dates)))]
     where updateDateTimes :: [Date] [[Time]] -> Task [DateTime]
           updateDateTimes dates times = 
                                if (length dates > 1)
