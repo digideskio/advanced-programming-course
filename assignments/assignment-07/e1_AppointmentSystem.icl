@@ -82,36 +82,6 @@ makeAppointment = get currentUser
                                >>= \_ -> makeAppointment))
                              , OnAction (Action "Cancel") (always (return ()))
                              ]
-                             
-makeProposal :: Task ()
-makeProposal = get currentUser
-        >>= \me             -> get currentDateTime
-        >>= \now            -> getNextID
-        >>= \id             -> get users
-        >>= \users ->  (       enterInformation "Appointment title" []
-                         -&&- updateInformation "Duration" [] {Time|hour=1, min=0, sec=0}
-                       )
-        @ (\(title, duration) -> title +++ "placeholder to ensure title's type can be inferred")
-        >>= const
-
-sendInvites :: Proposal -> Task ()
-sendInvites proposal = sendInvites` proposal proposal.Proposal.participants
-    where sendInvites` :: Proposal [User] -> Task ()
-          sendInvites` _ [] = return ()
-          sendInvites` proposal [participant:participants] =
-                  get currentDateTime 
-              >>= \now -> assign
-                        (workerAttributes participant
-                                     [ ("title",      "Please respond: " +++ proposal.Proposal.title)
-                                     , ("createdBy",  toString (toUserConstraint proposal.Proposal.owner))
-                                     , ("createdAt",  toString now)
-                                     , ("priority",   toString 5)
-                                     , ("createdFor", toString (toUserConstraint participant))
-                         ]) 
-                         (invitation proposal)
-
-invitation :: Proposal -> Task ()
-invitation _ = undef
 
 addAppointmentToShare :: Appointment -> Task ()
 addAppointmentToShare appointment = upd (\appointments -> [appointment : appointments]) schedule
@@ -132,6 +102,40 @@ addAppointmentTasks appointment [participant:participants] =
                          ]) 
             (viewInformation "Placeholder" [] "Placeholder")
     >>= \_ -> addAppointmentTasks appointment participants
+
+makeProposal :: Task ()
+makeProposal = get currentUser
+        >>= \me             -> get currentDateTime
+        >>= \now            -> getNextID
+        >>= \id             -> get users
+        >>= \users ->  (       enterInformation "Appointment title" []
+                         -&&- updateInformation "Duration" [] {Time|hour=1, min=0, sec=0}
+                       )
+        @ (\(title, duration) -> title +++ "placeholder to ensure title's type can be inferred")
+        >>= const
+
+addProposalToShare :: Proposal -> Task ()
+addProposalToShare proposal = upd (\proposals -> [proposal : proposals]) proposals
+                                    >>= const
+
+sendInvites :: Proposal -> Task ()
+sendInvites proposal = sendInvites` proposal proposal.Proposal.participants
+    where sendInvites` :: Proposal [User] -> Task ()
+          sendInvites` _ [] = return ()
+          sendInvites` proposal [participant:participants] =
+                  get currentDateTime 
+              >>= \now -> assign
+                        (workerAttributes participant
+                                     [ ("title",      "Please respond: " +++ proposal.Proposal.title)
+                                     , ("createdBy",  toString (toUserConstraint proposal.Proposal.owner))
+                                     , ("createdAt",  toString now)
+                                     , ("priority",   toString 5)
+                                     , ("createdFor", toString (toUserConstraint participant))
+                         ]) 
+                         (invitation proposal)
+
+invitation :: Proposal -> Task ()
+invitation _ = undef
 
 tasks :: [Workflow]
 tasks = [
