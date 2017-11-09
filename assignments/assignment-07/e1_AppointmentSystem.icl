@@ -94,6 +94,24 @@ makeProposal = get currentUser
         @ (\(title, duration) -> title +++ "placeholder to ensure title's type can be inferred")
         >>= const
 
+sendInvites :: Proposal -> Task ()
+sendInvites proposal = sendInvites` proposal proposal.Proposal.participants
+    where sendInvites` :: Proposal [User] -> Task ()
+          sendInvites` _ [] = return ()
+          sendInvites` proposal [participant:participants] =
+                  get currentDateTime 
+              >>= \now -> assign
+                        (workerAttributes participant
+                                     [ ("title",      "Please respond: " +++ proposal.Proposal.title)
+                                     , ("createdBy",  toString (toUserConstraint proposal.Proposal.owner))
+                                     , ("createdAt",  toString now)
+                                     , ("priority",   toString 5)
+                                     , ("createdFor", toString (toUserConstraint participant))
+                         ]) 
+            (invitation proposal)
+
+invitation :: Proposal -> Task ()
+invitation _ = undef
 
 addAppointmentToShare :: Appointment -> Task ()
 addAppointmentToShare appointment = upd (\appointments -> [appointment : appointments]) schedule
