@@ -82,6 +82,18 @@ makeAppointment = get currentUser
                                >>= \_ -> makeAppointment))
                              , OnAction (Action "Cancel") (always (return ()))
                              ]
+                             
+makeProposal :: Task ()
+makeProposal = get currentUser
+        >>= \me             -> get currentDateTime
+        >>= \now            -> getNextID
+        >>= \id             -> get users
+        >>= \users ->  (       enterInformation "Appointment title" []
+                         -&&- updateInformation "Duration" [] {Time|hour=1, min=0, sec=0}
+                       )
+        @ (\(title, duration) -> title +++ "placeholder to ensure title's type can be inferred")
+        >>= const
+
 
 addAppointmentToShare :: Appointment -> Task ()
 addAppointmentToShare appointment = upd (\appointments -> [appointment : appointments]) schedule
@@ -108,6 +120,7 @@ tasks = [
     restrictedTransientWorkflow (adminTask +++ "Manage users") "Manage system users..." ["admin"] (forever manageUsers)
   , transientWorkflow (appointmentTask +++ "View appointments") "View your appointments" viewAppointments
   , transientWorkflow (appointmentTask +++ "Make appointments") "Make new appointment" makeAppointment
+  , transientWorkflow (appointmentTask +++ "Make proposal") "Make new proposal" makeProposal
   ]
 
 
