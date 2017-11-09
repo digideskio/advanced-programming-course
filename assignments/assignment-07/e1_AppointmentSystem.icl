@@ -108,7 +108,7 @@ sendInvites proposal = sendInvites` proposal proposal.Proposal.participants
                                      , ("priority",   toString 5)
                                      , ("createdFor", toString (toUserConstraint participant))
                          ]) 
-            (invitation proposal)
+                         (invitation proposal)
 
 invitation :: Proposal -> Task ()
 invitation _ = undef
