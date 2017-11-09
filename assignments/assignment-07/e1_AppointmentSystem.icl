@@ -181,7 +181,7 @@ addProposalToShare :: Proposal -> Task ()
 addProposalToShare proposal =  upd (\proposals -> [proposal : proposals]) proposals
         >>= \_              -> upd (\proposalResponses -> [{ProposalResponse | id=proposal.Proposal.id, responses=[]} : proposalResponses]) proposalResponses
         >>= \_              -> sendManageProposal proposal
-        >>= \_              -> sendInvites proposal
+                           ||- sendInvites proposal
 
 sendInvites :: Proposal -> Task ()
 sendInvites proposal = sendInvites` proposal proposal.Proposal.participants
