@@ -90,11 +90,10 @@ getNextID = get id
 // | Appointment tasks                                              | //
 // ------------------------------------------------------------------ //
 
-viewAppointments :: Task ()
+viewAppointments :: Task [Appointment]
 viewAppointments = get currentUser 
         >>= \me              -> get currentDateTime 
         >>= \now             -> viewSharedInformation "Appointment viewer" [ViewAs (filter (\app -> (isMember me app.Appointment.participants && app.Appointment.when > now)))] schedule
-        >>=                     const
 
 makeAppointment :: Task ()
 makeAppointment = get currentUser 
