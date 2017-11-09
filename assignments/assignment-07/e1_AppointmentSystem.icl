@@ -233,6 +233,9 @@ manageProposal proposal = getByID proposal.Proposal.id
                           case maybeResponse of 
                               Just response = viewInformation "Proposal responses." [] response.ProposalResponse.responses
                               Nothing = undef // Should never occur!
+                          ||- enterChoice "Select time" [ChooseFromGrid (\s -> s)] proposal.Proposal.when
+                          >>* [ OnAction (Action "Schedule") (hasValue (\dateTime -> return ())),
+                                OnAction (Action "Cancel proposal") (always (return ()))]
                       >>= const
 
 // ------------------------------------------------------------------ //
