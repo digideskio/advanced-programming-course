@@ -5,6 +5,7 @@ module e1_AppointmentSystem
  * Thomas Churchman s4206606
  */
 
+import Data.List
 import iTasks
 import iTasks.Extensions.DateTime
 import System.Time
@@ -25,11 +26,11 @@ import System.Time
 
 :: Proposal = 
     {
-        id       :: Int,
-        title    :: String,
-        when     :: [DateTime],
-        duration :: Time,
-        owner    :: User,
+        id           :: Int,
+        title        :: String,
+        when         :: [DateTime],
+        duration     :: Time,
+        owner        :: User,
         participants :: [User]
     }
 
@@ -101,7 +102,7 @@ makeAppointment = get currentUser
         >>= \now            -> getNextID
         >>= \id             -> get users
         >>= \users ->  ((      enterInformation "Appointment title" [] 
-                         -&&-  updateInformation "Starting time" [] (addTime now {Time|hour=1, min=(0-now.DateTime.min), sec=(0-now.DateTime.sec)})
+                         -&&-  updateInformation "Starting time" [] (addTime now {Time | hour=1, min=(0-now.DateTime.min), sec=(0-now.DateTime.sec)})
                         )-&&-( updateInformation "Duration" [] {Time|hour=1, min=0, sec=0}
                          -&&-  enterMultipleChoice "Choose participants" [ChooseFromCheckGroup (\s -> s)] users
                        )) 
@@ -136,16 +137,28 @@ addAppointmentTasks appointment [participant:participants] =
 // | Proposal tasks                                                 | //
 // ------------------------------------------------------------------ //
 
-makeProposal :: Task ()
+makeProposal :: Task Proposal
 makeProposal = get currentUser
         >>= \me             -> get currentDateTime
         >>= \now            -> getNextID
         >>= \id             -> get users
-        >>= \users ->  (       enterInformation "Appointment title" []
-                         -&&- updateInformation "Duration" [] {Time|hour=1, min=0, sec=0}
+        >>= \users ->  ( (     enterInformation "Appointment title" []
+                          -&&- updateInformation "Duration" [] {Time|hour=1, min=0, sec=0}
+                         )-&&- enterMultipleChoice "Choose participants" [ChooseFromCheckGroup (\s -> s)] users
                        )
-        @ (\(title, duration) -> title +++ "placeholder to ensure title's type can be inferred")
-        >>= const
+        >>= \((ttl,dur),ps) -> chooseDateTimes 
+        >>= \times          -> viewInformation "Resulting proposal" [] {Proposal | id=id, title=ttl, when=times, duration=dur, owner=me, participants=ps}
+
+chooseDateTimes :: Task [DateTime]
+chooseDateTimes =              enterInformation "Choose proposed dates" []
+        >>= \dates          -> updateDateTimes dates (map (\_ -> []) dates)
+    where updateDateTimes :: [Date] [[Time]] -> Task [DateTime]
+          updateDateTimes dates times = 
+                               allTasks (zipWith (\date -> updateInformation ("Proposed times for " +++ toString date) []) dates times)
+                        >>*  [ OnAction (Action "Propose") (ifValue (all (not o isEmpty)) (\times -> return (combineDateTimes dates times)))
+                             , OnAction (Action "Copy times from first date") (ifValue (not o isEmpty o hd) (\times -> updateDateTimes dates (map (\_ -> hd times) dates)))
+                             ]
+          combineDateTimes dates times = flatten (zipWith (\date -> map (\time -> {DateTime | year=date.Date.year, mon=date.Date.mon, day=date.Date.day, hour=time.Time.hour, min=time.Time.min, sec=time.Time.sec})) dates times)
 
 addProposalToShare :: Proposal -> Task ()
 addProposalToShare proposal = upd (\proposals -> [proposal : proposals]) proposals
