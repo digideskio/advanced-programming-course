@@ -148,7 +148,7 @@ addAppointmentTasks appointment [participant:participants] =
                          , ("priority",   toString 5)
                          , ("createdFor", toString (toUserConstraint participant))
                          ]) 
-            (viewInformation "Placeholder" [] "Placeholder")
+            (viewInformation "Appointment" [] appointment.Appointment.title)
     ||-      addAppointmentTasks appointment participants
 
 // ------------------------------------------------------------------ //
