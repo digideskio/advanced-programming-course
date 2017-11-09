@@ -9,6 +9,10 @@ import iTasks
 import iTasks.Extensions.DateTime
 import System.Time
 
+// ------------------------------------------------------------------ //
+// | Data structures & utility functions                            | //
+// ------------------------------------------------------------------ //
+
 :: Appointment =
     {
         id           :: Int,
@@ -52,6 +56,10 @@ schedule = sharedStore "schedule" []
 proposals :: Shared [Proposal]
 proposals = sharedStore "proposals" []
 
+id :: Shared Int
+id = sharedStore "idIncrement" 0
+
+// Convenience functions to get appointments and proposals by ID
 class getByID` a :: Int [a] -> Maybe a
 
 instance getByID` Appointment where
@@ -72,13 +80,15 @@ instance getByID Proposal where
     getByID id = get proposals
                  >>= \proposals -> return (getByID` id proposals)
 
-id :: Shared Int
-id = sharedStore "idIncrement" 0
-
+// Convenience function to get and increment the ID share
 getNextID :: Task Int
 getNextID = get id
             >>= \id` -> set (id` + 1) id
             >>= (\_ -> return id`)
+
+// ------------------------------------------------------------------ //
+// | Appointment tasks                                              | //
+// ------------------------------------------------------------------ //
 
 viewAppointments :: Task ()
 viewAppointments = get currentUser 
@@ -123,6 +133,10 @@ addAppointmentTasks appointment [participant:participants] =
             (viewInformation "Placeholder" [] "Placeholder")
     >>= \_ -> addAppointmentTasks appointment participants
 
+// ------------------------------------------------------------------ //
+// | Proposal tasks                                                 | //
+// ------------------------------------------------------------------ //
+
 makeProposal :: Task ()
 makeProposal = get currentUser
         >>= \me             -> get currentDateTime
@@ -156,6 +170,10 @@ sendInvites proposal = sendInvites` proposal proposal.Proposal.participants
 
 invitation :: Proposal -> Task ()
 invitation _ = undef
+
+// ------------------------------------------------------------------ //
+// | Worfkow boilerplate                                            | //
+// ------------------------------------------------------------------ //
 
 tasks :: [Workflow]
 tasks = [
