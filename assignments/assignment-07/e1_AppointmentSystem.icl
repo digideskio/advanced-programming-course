@@ -180,8 +180,8 @@ makeProposal = get currentUser
 addProposalToShare :: Proposal -> Task ()
 addProposalToShare proposal =  upd (\proposals -> [proposal : proposals]) proposals
         >>= \_              -> upd (\proposalResponses -> [{ProposalResponse | id=proposal.Proposal.id, responses=[]} : proposalResponses]) proposalResponses
-        >>= \_              -> sendInvites proposal
         >>= \_              -> sendManageProposal proposal
+        >>= \_              -> sendInvites proposal
 
 sendInvites :: Proposal -> Task ()
 sendInvites proposal = sendInvites` proposal proposal.Proposal.participants
@@ -227,7 +227,12 @@ sendManageProposal proposal = get currentDateTime
                          (manageProposal proposal)
             
 manageProposal :: Proposal -> Task ()
-manageProposal proposal = undef
+manageProposal proposal = getByID proposal.Proposal.id
+                      >>= \maybeResponse -> 
+                          case maybeResponse of 
+                              Just response = viewInformation "Proposal responses." [] response.ProposalResponse.responses
+                              Nothing = undef // Should never occur!
+                      >>= const
 
 // ------------------------------------------------------------------ //
 // | Worfkow boilerplate                                            | //
