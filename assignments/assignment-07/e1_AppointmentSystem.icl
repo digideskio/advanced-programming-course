@@ -149,7 +149,7 @@ addAppointmentTasks appointment [participant:participants] =
                          , ("createdFor", toString (toUserConstraint participant))
                          ]) 
             (viewInformation "Placeholder" [] "Placeholder")
-    >>= \_ -> addAppointmentTasks appointment participants
+    ||-      addAppointmentTasks appointment participants
 
 // ------------------------------------------------------------------ //
 // | Proposal tasks                                                 | //
@@ -197,6 +197,7 @@ sendInvites proposal = sendInvites` proposal proposal.Proposal.participants
                                      , ("createdFor", toString (toUserConstraint participant))
                          ]) 
                          (invitation proposal)
+              ||- sendInvites` proposal participants
 
 invitation :: Proposal -> Task ()
 invitation proposal = getByID proposal.Proposal.id 
