@@ -34,8 +34,15 @@ import System.Time
         participants :: [User]
     }
 
+:: ProposalResponse =
+    {
+        id           :: Int,
+        responses    :: [(User,[DateTime])]
+    }
+
 derive class iTask Appointment
 derive class iTask Proposal
+derive class iTask ProposalResponse
 
 // Ground
 undef = undef
@@ -57,6 +64,9 @@ schedule = sharedStore "schedule" []
 proposals :: Shared [Proposal]
 proposals = sharedStore "proposals" []
 
+proposalResponses :: Shared [ProposalResponse]
+proposalResponses = sharedStore "proposalResponses" []
+
 id :: Shared Int
 id = sharedStore "idIncrement" 0
 
@@ -70,6 +80,10 @@ instance getByID` Appointment where
 instance getByID` Proposal where
     getByID` _ [] = Nothing
     getByID` id [x : xs] = if (x.Proposal.id == id) (Just x) (getByID` id xs)
+
+instance getByID` ProposalResponse where
+    getByID` _ [] = Nothing
+    getByID` id [x : xs] = if (x.ProposalResponse.id == id) (Just x) (getByID` id xs)
     
 class getByID a :: Int -> Task (Maybe a)
 
@@ -80,6 +94,10 @@ instance getByID Appointment where
 instance getByID Proposal where
     getByID id = get proposals
                  >>= \proposals -> return (getByID` id proposals)
+
+instance getByID ProposalResponse where
+    getByID id = get proposalResponses
+                 >>= \proposalResponses -> return (getByID` id proposalResponses)
 
 // Convenience function to get and increment the ID share
 getNextID :: Task Int
@@ -115,7 +133,7 @@ makeAppointment = get currentUser
 
 addAppointmentToShare :: Appointment -> Task ()
 addAppointmentToShare appointment = upd (\appointments -> [appointment : appointments]) schedule
-                                    >>= \_ -> addAppointmentTasks appointment appointment.Appointment.participants
+                          >>= \_ -> addAppointmentTasks appointment appointment.Appointment.participants
 
 addAppointmentTasks :: Appointment [User] -> Task ()
 addAppointmentTasks appointment [] = return ()
@@ -162,6 +180,7 @@ chooseDateTimes =              enterInformation "Choose proposed dates" []
 
 addProposalToShare :: Proposal -> Task ()
 addProposalToShare proposal =  upd (\proposals -> [proposal : proposals]) proposals
+        >>= \_              -> upd (\proposalResponses -> [{ProposalResponse | id=proposal.Proposal.id, responses=[]} : proposalResponses]) proposalResponses
         >>= \_              -> sendInvites proposal
 
 sendInvites :: Proposal -> Task ()
@@ -185,9 +204,15 @@ invitation proposal = getByID proposal.Proposal.id
                   >>* [ OnValue (hasValue nextTask) ]
     where nextTask :: (Maybe Proposal) -> Task ()
           nextTask Nothing  =  viewInformation "This proposal no longer exists." [] ()
-          nextTask (Just _) =  viewInformation "Appointment proposed! Please respond:" [] proposal
+          nextTask (Just proposal) = get currentUser
+            >>= \user       -> viewInformation "Appointment proposed! Please respond:" [] proposal
                            ||- enterMultipleChoice "Choose participants" [ChooseFromCheckGroup (\s -> s)] proposal.Proposal.when
-                           >>= const
+            >>= \chosen     -> upd (addResponse proposal.Proposal.id user chosen) proposalResponses
+            >>=                const
+          addResponse id user chosen [] = [] // just to be sure
+          addResponse id user chosen [response:responses] 
+            | response.ProposalResponse.id == id = [{ProposalResponse | response & responses = [(user, chosen) : response.ProposalResponse.responses]} : responses]
+            | otherwise = [response : addResponse id user chosen responses]
 
 // ------------------------------------------------------------------ //
 // | Worfkow boilerplate                                            | //
