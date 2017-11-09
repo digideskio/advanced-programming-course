@@ -169,7 +169,7 @@ makeProposal = get currentUser
 
 chooseDateTimes :: Task [DateTime]
 chooseDateTimes =              enterInformation "Choose proposed dates" []
-        >>= \dates          -> updateDateTimes dates (map (\_ -> []) dates)
+        >>* [OnAction (Action "Choose times") (ifValue (not o isEmpty) (\dates -> updateDateTimes dates (map (\_ -> []) dates)))]
     where updateDateTimes :: [Date] [[Time]] -> Task [DateTime]
           updateDateTimes dates times = 
                                allTasks (zipWith (\date -> updateInformation ("Proposed times for " +++ toString date) []) dates times)
