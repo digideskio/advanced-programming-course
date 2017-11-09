@@ -184,6 +184,7 @@ addProposalToShare :: Proposal -> Task ()
 addProposalToShare proposal =  upd (\proposals -> [proposal : proposals]) proposals
         >>= \_              -> upd (\proposalResponses -> [{ProposalResponse | id=proposal.Proposal.id, responses=[]} : proposalResponses]) proposalResponses
         >>= \_              -> sendInvites proposal
+        >>= \_              -> sendManageProposal proposal
 
 sendInvites :: Proposal -> Task ()
 sendInvites proposal = sendInvites` proposal proposal.Proposal.participants
@@ -215,6 +216,21 @@ invitation proposal = getByID proposal.Proposal.id
           addResponse id user chosen [response:responses] 
             | response.ProposalResponse.id == id = [{ProposalResponse | response & responses = [(user, chosen) : response.ProposalResponse.responses]} : responses]
             | otherwise = [response : addResponse id user chosen responses]
+            
+sendManageProposal :: Proposal -> Task ()
+sendManageProposal proposal = get currentDateTime 
+            >>= \now -> assign
+                        (workerAttributes proposal.Proposal.owner
+                                     [ ("title",      "Manage appointment proposal: " +++ proposal.Proposal.title)
+                                     , ("createdBy",  toString (toUserConstraint proposal.Proposal.owner))
+                                     , ("createdAt",  toString now)
+                                     , ("priority",   toString 5)
+                                     , ("createdFor", toString (toUserConstraint proposal.Proposal.owner))
+                         ]) 
+                         (manageProposal proposal)
+            
+manageProposal :: Proposal -> Task ()
+manageProposal proposal = undef
 
 // ------------------------------------------------------------------ //
 // | Worfkow boilerplate                                            | //
