@@ -147,7 +147,7 @@ makeProposal = get currentUser
                          )-&&- enterMultipleChoice "Choose participants" [ChooseFromCheckGroup (\s -> s)] users
                        )
         >>= \((ttl,dur),ps) -> chooseDateTimes 
-        >>= \times          -> viewInformation "Resulting proposal" [] {Proposal | id=id, title=ttl, when=times, duration=dur, owner=me, participants=ps}
+        >>= \times          -> sendInvites {Proposal | id=id, title=ttl, when=times, duration=dur, owner=me, participants=ps}
 
 chooseDateTimes :: Task [DateTime]
 chooseDateTimes =              enterInformation "Choose proposed dates" []
