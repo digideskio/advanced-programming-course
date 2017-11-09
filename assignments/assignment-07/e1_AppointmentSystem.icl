@@ -52,6 +52,26 @@ schedule = sharedStore "schedule" []
 proposals :: Shared [Proposal]
 proposals = sharedStore "proposals" []
 
+class getByID` a :: Int [a] -> Maybe a
+
+instance getByID` Appointment where
+    getByID` _ [] = Nothing
+    getByID` id [x : xs] = if (x.Appointment.id == id) (Just x) (getByID` id xs)
+
+instance getByID` Proposal where
+    getByID` _ [] = Nothing
+    getByID` id [x : xs] = if (x.Proposal.id == id) (Just x) (getByID` id xs)
+    
+class getByID a :: Int -> Task (Maybe a)
+
+instance getByID Appointment where
+    getByID id = get schedule
+                 >>= \appointments -> return (getByID` id appointments)
+
+instance getByID Proposal where
+    getByID id = get proposals
+                 >>= \proposals -> return (getByID` id proposals)
+
 id :: Shared Int
 id = sharedStore "idIncrement" 0
 
