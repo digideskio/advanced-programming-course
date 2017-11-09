@@ -147,7 +147,7 @@ makeProposal = get currentUser
                          )-&&- enterMultipleChoice "Choose participants" [ChooseFromCheckGroup (\s -> s)] users
                        )
         >>= \((ttl,dur),ps) -> chooseDateTimes 
-        >>= \times          -> sendInvites {Proposal | id=id, title=ttl, when=times, duration=dur, owner=me, participants=ps}
+        >>= \times          -> addProposalToShare {Proposal | id=id, title=ttl, when=times, duration=dur, owner=me, participants=ps}
 
 chooseDateTimes :: Task [DateTime]
 chooseDateTimes =              enterInformation "Choose proposed dates" []
@@ -161,8 +161,8 @@ chooseDateTimes =              enterInformation "Choose proposed dates" []
           combineDateTimes dates times = flatten (zipWith (\date -> map (\time -> {DateTime | year=date.Date.year, mon=date.Date.mon, day=date.Date.day, hour=time.Time.hour, min=time.Time.min, sec=time.Time.sec})) dates times)
 
 addProposalToShare :: Proposal -> Task ()
-addProposalToShare proposal = upd (\proposals -> [proposal : proposals]) proposals
-                                    >>= const
+addProposalToShare proposal =  upd (\proposals -> [proposal : proposals]) proposals
+        >>= \_              -> sendInvites proposal
 
 sendInvites :: Proposal -> Task ()
 sendInvites proposal = sendInvites` proposal proposal.Proposal.participants
@@ -172,7 +172,7 @@ sendInvites proposal = sendInvites` proposal proposal.Proposal.participants
                   get currentDateTime 
               >>= \now -> assign
                         (workerAttributes participant
-                                     [ ("title",      "Please respond: " +++ proposal.Proposal.title)
+                                     [ ("title",      "Appointment proposed: " +++ proposal.Proposal.title)
                                      , ("createdBy",  toString (toUserConstraint proposal.Proposal.owner))
                                      , ("createdAt",  toString now)
                                      , ("priority",   toString 5)
