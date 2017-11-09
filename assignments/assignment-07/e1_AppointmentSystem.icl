@@ -137,7 +137,7 @@ addAppointmentTasks appointment [participant:participants] =
 // | Proposal tasks                                                 | //
 // ------------------------------------------------------------------ //
 
-makeProposal :: Task Proposal
+makeProposal :: Task ()
 makeProposal = get currentUser
         >>= \me             -> get currentDateTime
         >>= \now            -> getNextID
@@ -181,7 +181,13 @@ sendInvites proposal = sendInvites` proposal proposal.Proposal.participants
                          (invitation proposal)
 
 invitation :: Proposal -> Task ()
-invitation _ = undef
+invitation proposal = getByID proposal.Proposal.id 
+                  >>* [ OnValue (hasValue nextTask) ]
+    where nextTask :: (Maybe Proposal) -> Task ()
+          nextTask Nothing  =  viewInformation "This proposal no longer exists." [] ()
+          nextTask (Just _) =  viewInformation "Appointment proposed! Please respond:" [] proposal
+                           ||- enterMultipleChoice "Choose participants" [ChooseFromCheckGroup (\s -> s)] proposal.Proposal.when
+                           >>= const
 
 // ------------------------------------------------------------------ //
 // | Worfkow boilerplate                                            | //
