@@ -206,7 +206,7 @@ invitation proposal = getByID proposal.Proposal.id
           nextTask Nothing  =  viewInformation "This proposal no longer exists." [] ()
           nextTask (Just proposal) = get currentUser
             >>= \user       -> viewInformation "Appointment proposed! Please respond:" [] proposal
-                           ||- enterMultipleChoice "Choose participants" [ChooseFromCheckGroup (\s -> s)] proposal.Proposal.when
+                           ||- enterMultipleChoice "Choose available times" [ChooseFromCheckGroup (\s -> s)] proposal.Proposal.when
             >>= \chosen     -> upd (addResponse proposal.Proposal.id user chosen) proposalResponses
             >>=                const
           addResponse id user chosen [] = [] // just to be sure
