@@ -201,19 +201,25 @@ sendInvites proposal = sendInvites` proposal proposal.Proposal.participants
               ||- sendInvites` proposal participants
 
 invitation :: Proposal -> Task ()
-invitation proposal = getByID proposal.Proposal.id 
-                  >>* [ OnValue (hasValue nextTask) ]
-    where nextTask :: (Maybe Proposal) -> Task ()
-          nextTask Nothing  =  viewInformation "This proposal no longer exists." [] ()
-          nextTask (Just proposal) = get currentUser
+invitation proposal = let id = proposal.Proposal.id in 
+                               getByID id 
+        >>*                  [ OnValue (hasValue (invTask id)) ]
+    where invTask :: Int (Maybe Proposal) -> Task ()
+          invTask id Nothing = getAppointment id
+            >>= \maybeappt  -> case maybeappt of
+                   Just appt = viewInformation "This proposal has already been scheduled on the following date:" [] appt >>= const
+                   Nothing   = viewInformation "Error" [] "That proposal could not be found." >>= const
+          invTask _ (Just proposal) = get currentUser
             >>= \user       -> viewInformation "Appointment proposed! Please respond:" [] proposal
                            ||- enterMultipleChoice "Choose available times" [ChooseFromCheckGroup (\s -> s)] proposal.Proposal.when
             >>= \chosen     -> upd (addResponse proposal.Proposal.id user chosen) proposalResponses
             >>=                const
-          addResponse id user chosen [] = [] // just to be sure
+          addResponse id user chosen [] = []
           addResponse id user chosen [response:responses] 
             | response.ProposalResponse.id == id = [{ProposalResponse | response & responses = [(user, chosen) : response.ProposalResponse.responses]} : responses]
             | otherwise = [response : addResponse id user chosen responses]
+          getAppointment :: Int -> Task (Maybe Appointment)
+          getAppointment id = getByID id // just to resolve overloading above
             
 sendManageProposal :: Proposal -> Task ()
 sendManageProposal proposal = get currentDateTime 
@@ -230,16 +236,23 @@ sendManageProposal proposal = get currentDateTime
 manageProposal :: Proposal -> Task ()
 manageProposal proposal = getByID proposal.Proposal.id
         >>= \maybeResponse -> case maybeResponse of 
-            Nothing =          undef // Should never occur!
+            Nothing =          viewInformation "It seems you have already scheduled this appointment previously." [] () // (should not occur)
             Just response =    viewInformation "Proposal responses." [] response.ProposalResponse.responses
                            ||- enterChoice "Select time" [ChooseFromGrid (\s -> s)] proposal.Proposal.when
                            >>* [ OnAction (Action "Schedule") (hasValue (\dateTime -> scheduleTask proposal dateTime))
                                , OnAction (Action "Return") (always (sendManageProposal proposal ||- return ())) // send again so task is not lost
                                ]
-    where scheduleTask proposal dateTime = addAppointmentToShare {Appointment | id=proposal.Proposal.id, title=proposal.Proposal.title, duration=proposal.Proposal.duration,
-                                                                           owner=proposal.Proposal.owner, participants=proposal.Proposal.participants, when=dateTime}
+    where scheduleTask proposal dateTime = let id = proposal.Proposal.id in
+                               addAppointmentToShare {Appointment | id=id, title=proposal.Proposal.title, duration=proposal.Proposal.duration,
+                                                                    owner=proposal.Proposal.owner, participants=proposal.Proposal.participants, when=dateTime}
+            >>= \_          -> upd (removeById id (\p -> p.Proposal.id)) proposals
+            >>= \_          -> upd (removeById id (\p -> p.ProposalResponse.id)) proposalResponses
             >>= \_          -> viewInformation "Success" [] "The appointment has been scheduled."
             >>=                const
+          removeById _ _ [] = []
+          removeById id getId [x:xs]
+            | getId x == id = xs
+            | otherwise = [x : removeById id getId xs]
 
 // ------------------------------------------------------------------ //
 // | Worfkow boilerplate                                            | //
