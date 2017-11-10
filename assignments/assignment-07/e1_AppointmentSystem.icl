@@ -229,14 +229,17 @@ sendManageProposal proposal = get currentDateTime
             
 manageProposal :: Proposal -> Task ()
 manageProposal proposal = getByID proposal.Proposal.id
-                      >>= \maybeResponse -> 
-                          case maybeResponse of 
-                              Just response = viewInformation "Proposal responses." [] response.ProposalResponse.responses
-                              Nothing = undef // Should never occur!
-                          ||- enterChoice "Select time" [ChooseFromGrid (\s -> s)] proposal.Proposal.when
-                          >>* [ OnAction (Action "Schedule") (hasValue (\dateTime -> return ())),
-                                OnAction (Action "Cancel proposal") (always (return ()))]
-                      >>= const
+        >>= \maybeResponse -> case maybeResponse of 
+            Nothing =          undef // Should never occur!
+            Just response =    viewInformation "Proposal responses." [] response.ProposalResponse.responses
+                           ||- enterChoice "Select time" [ChooseFromGrid (\s -> s)] proposal.Proposal.when
+                           >>* [ OnAction (Action "Schedule") (hasValue (\dateTime -> scheduleTask proposal dateTime))
+                               , OnAction (Action "Return") (always (sendManageProposal proposal ||- return ())) // send again so task is not lost
+                               ]
+    where scheduleTask proposal dateTime = addAppointmentToShare {Appointment | id=proposal.Proposal.id, title=proposal.Proposal.title, duration=proposal.Proposal.duration,
+                                                                           owner=proposal.Proposal.owner, participants=proposal.Proposal.participants, when=dateTime}
+            >>= \_          -> viewInformation "Success" [] "The appointment has been scheduled."
+            >>=                const
 
 // ------------------------------------------------------------------ //
 // | Worfkow boilerplate                                            | //
