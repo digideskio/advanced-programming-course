@@ -171,7 +171,7 @@ makeProposal = get currentUser
           updateDateTimes dates times = 
                                if (length dates > 1)
                                    (allTasks (zipWith (\date -> updateInformation ("Proposed times for " +++ toString date) []) dates times))
-                                   (updateInformation ("Proposed times for " +++ toString (dates!!0)) [] [] >>= \times -> return [times]) // Hacky solution to solve "hd of []" when only one date is presented to allTasks
+                                   (updateInformation ("Proposed times for " +++ toString (hd dates)) [] [] @ (\ts -> [ts])) 
                         >>*  [ OnAction (Action "Propose") (ifValue (all (not o isEmpty)) (\times -> return (combineDateTimes dates times)))
                              , OnAction (Action "Copy times from first date") (ifValue (not o isEmpty o hd) (\times -> updateDateTimes dates (map (\_ -> hd times) dates)))
                              ]
