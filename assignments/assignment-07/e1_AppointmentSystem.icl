@@ -11,7 +11,7 @@ import iTasks.Extensions.DateTime
 import System.Time
 
 // ------------------------------------------------------------------ //
-// | Data structures & utility functions                            | //
+// | Data structures                                                | //
 // ------------------------------------------------------------------ //
 
 :: Appointment =
@@ -43,6 +43,52 @@ import System.Time
 derive class iTask Appointment
 derive class iTask Proposal
 derive class iTask ProposalResponse
+
+
+// ------------------------------------------------------------------ //
+// | Cosmetic data structures                                       | //
+// ------------------------------------------------------------------ //
+
+:: AppointmentDisplay =
+    {
+        title        :: String,
+        plannedAt    :: DateTime,
+        duration     :: Time,
+        plannedBy    :: String,
+        participants :: [String]
+    }
+
+:: ProposalDisplay =
+    {
+        title        :: String,
+        options      :: [DateTime],
+        duration     :: Time,
+        proposedBy   :: String,
+        participants :: [String]
+    }
+
+:: ProposalResponseDisplay =
+    {
+        responses    :: [(String,[DateTime])]
+    }
+
+derive class iTask AppointmentDisplay
+derive class iTask ProposalDisplay
+derive class iTask ProposalResponseDisplay
+
+transformAppointment :: Appointment -> AppointmentDisplay
+transformAppointment app = {AppointmentDisplay | title=app.Appointment.title, plannedAt=app.Appointment.when, duration=app.Appointment.duration, plannedBy=toString app.Appointment.owner, participants=map toString app.Appointment.participants}
+
+transformProposal :: Proposal -> ProposalDisplay
+transformProposal prop = {ProposalDisplay | title=prop.Proposal.title, options=prop.Proposal.when, duration=prop.Proposal.duration, proposedBy=toString prop.Proposal.owner, participants=map toString prop.Proposal.participants}
+
+transformProposalResponse :: ProposalResponse -> ProposalResponseDisplay
+transformProposalResponse pr = {ProposalResponseDisplay | responses=map (\(user,dates) -> (toString user,dates)) pr.ProposalResponse.responses}
+
+
+// ------------------------------------------------------------------ //
+// | Utility functions                                              | //
+// ------------------------------------------------------------------ //
 
 // Ground
 undef = undef
@@ -112,7 +158,7 @@ getNextID = get id
 viewAppointments :: Task [Appointment]
 viewAppointments = get currentUser 
         >>= \me              -> get currentDateTime 
-        >>= \now             -> viewSharedInformation "Appointment viewer" [ViewAs (filter (\app -> (isMember me app.Appointment.participants && app.Appointment.when > now)))] schedule
+        >>= \now             -> viewSharedInformation "Appointment viewer" [ViewAs (map transformAppointment o filter (\app -> (isMember me app.Appointment.participants && app.Appointment.when > now)))] schedule
 
 makeAppointment :: Task ()
 makeAppointment = get currentUser 
@@ -206,10 +252,10 @@ invitation proposal = let id = proposal.Proposal.id in
     where invTask :: Int (Maybe Proposal) -> Task ()
           invTask id Nothing = getAppointment id
             >>= \maybeappt  -> case maybeappt of
-                   Just appt = viewInformation "This proposal has already been scheduled on the following date:" [] appt >>= const
+                   Just appt = viewInformation "This proposal has already been scheduled on the following date:" [ViewAs transformAppointment] appt >>= const
                    Nothing   = viewInformation "Error" [] "That proposal could not be found." >>= const
           invTask _ (Just proposal) = get currentUser
-            >>= \user       -> viewInformation "Appointment proposed! Please respond:" [] proposal
+            >>= \user       -> viewInformation "Appointment proposed! Please respond:" [ViewAs transformProposal] proposal
                            ||- enterMultipleChoice "Choose available times" [ChooseFromCheckGroup (\s -> s)] proposal.Proposal.when
             >>= \chosen     -> upd (addResponse proposal.Proposal.id user chosen) proposalResponses
             >>=                const
@@ -236,7 +282,7 @@ manageProposal :: Proposal -> Task ()
 manageProposal proposal = getByID proposal.Proposal.id
         >>= \maybeResponse -> case maybeResponse of 
             Nothing =          viewInformation "It seems you have already scheduled this appointment previously." [] () // (should not occur)
-            Just response =    viewInformation "Proposal responses." [] response.ProposalResponse.responses
+            Just response =    viewInformation "Proposal responses." [ViewAs transformProposalResponse] response
                            ||- enterChoice "Select time" [ChooseFromGrid (\s -> s)] proposal.Proposal.when
                            >>* [ OnAction (Action "Schedule") (hasValue (\dateTime -> scheduleTask proposal dateTime))
                                , OnAction (Action "Return") (always (sendManageProposal proposal ||- return ())) // send again so task is not lost
