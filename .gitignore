@@ -8,3 +8,9 @@ Clean System Files
 *-sapl
 *-www
 *-data
+
+# LaTeX
+*.aux
+*.log
+*.pdf
+*.synctex.gz
