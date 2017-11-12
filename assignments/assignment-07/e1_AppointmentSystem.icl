@@ -143,7 +143,7 @@ makeAppointment = get currentUser
                        @ (\((title,when),(duration,participants)) -> {Appointment|id=id, title=title, when=when, duration=duration, owner=me, participants=participants})
         >>*                  [ OnAction (Action "Make") (hasValue (\appointment -> addAppointmentToShare appointment
                                >>= \_ -> viewInformation "Success" [] "The appointment has been added."
-                               >>= \_ -> makeAppointment))
+                               >>| return ()))
                              , OnAction (Action "Cancel") (always (return ()))
                              ]
 
