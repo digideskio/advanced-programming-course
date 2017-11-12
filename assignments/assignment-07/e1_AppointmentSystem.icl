@@ -106,6 +106,22 @@ getNextID = get id
             >>= (\_ -> return id`)
 
 // ------------------------------------------------------------------ //
+// | Task scheduling                                                | //
+// ------------------------------------------------------------------ //
+
+scheduleAtTime :: DateTime [Task a] -> Task () | iTask a
+scheduleAtTime dateTime tasks =
+    /*assign
+        (workerAttributes "root"
+            [("title", "Scheduler " +++ toString dateTime)])
+        (waitForDateTime dateTime >>| doTasks tasks)*/
+    waitForDateTime dateTime >>| doTasks tasks
+    where
+    doTasks :: [Task a] -> Task () | iTask a
+    doTasks [] = return ()
+    doTasks [task:tasks] = task ||- doTasks tasks
+
+// ------------------------------------------------------------------ //
 // | Appointment tasks                                              | //
 // ------------------------------------------------------------------ //
 
@@ -136,19 +152,18 @@ addAppointmentToShare appointment = upd (\appointments -> [appointment : appoint
                           >>= \_ -> addAppointmentTasks appointment appointment.Appointment.participants
 
 addAppointmentTasks :: Appointment [User] -> Task ()
-addAppointmentTasks appointment [] = return ()
-addAppointmentTasks appointment [participant:participants] = 
-        assign
-            (workerAttributes participant
-                         [ ("title",      appointment.Appointment.title)
-                         , ("createdBy",  toString (toUserConstraint appointment.Appointment.owner))
-                         , ("createdAt",  toString appointment.Appointment.when)
-                         , ("completeBefore", toString (addTime appointment.Appointment.when appointment.Appointment.duration))
-                         , ("priority",   toString 5)
-                         , ("createdFor", toString (toUserConstraint participant))
-                         ]) 
-            (viewInformation "Appointment" [] appointment.Appointment.title)
-    ||-      addAppointmentTasks appointment participants
+addAppointmentTasks appointment participants = scheduleAtTime appointment.Appointment.when [
+    assign
+        (workerAttributes participant
+            [ ("title",      appointment.Appointment.title)
+            , ("createdBy",  toString (toUserConstraint appointment.Appointment.owner))
+            , ("createdAt",  toString appointment.Appointment.when)
+            , ("completeBefore", toString (addTime appointment.Appointment.when appointment.Appointment.duration))
+            , ("priority",   toString 5)
+            , ("createdFor", toString (toUserConstraint participant))
+        ]) 
+        (viewInformation "Appointment" [] appointment.Appointment.title)
+        \\ participant <- participants]
 
 // ------------------------------------------------------------------ //
 // | Proposal tasks                                                 | //
