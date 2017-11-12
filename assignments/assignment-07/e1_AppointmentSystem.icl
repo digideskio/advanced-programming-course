@@ -276,8 +276,8 @@ tasks :: [Workflow]
 tasks = [
     restrictedTransientWorkflow (adminTask +++ "Manage users") "Manage system users..." ["admin"] (forever manageUsers)
   , transientWorkflow (appointmentTask +++ "View appointments") "View your appointments" viewAppointments
-  , transientWorkflow (appointmentTask +++ "Make appointments") "Make new appointment" makeAppointment
-  , transientWorkflow (appointmentTask +++ "Make proposal") "Make new proposal" makeProposal
+  , transientWorkflow (appointmentTask +++ "Make appointments") "Make new appointment" (forever makeAppointment)
+  , transientWorkflow (appointmentTask +++ "Make proposal") "Make new proposal" (forever makeProposal)
   ]
 
 
