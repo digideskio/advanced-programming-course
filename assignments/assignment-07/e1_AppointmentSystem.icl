@@ -9,6 +9,7 @@ import Data.List
 import iTasks
 import iTasks.Extensions.DateTime
 import System.Time
+import qualified Data.Map as DM
 
 // ------------------------------------------------------------------ //
 // | Data structures                                                | //
@@ -152,6 +153,18 @@ getNextID = get id
             >>= (\_ -> return id`)
 
 // ------------------------------------------------------------------ //
+// | Task scheduling                                                | //
+// ------------------------------------------------------------------ //
+
+scheduleAtTime :: DateTime [Task a] -> Task () | iTask a
+scheduleAtTime dateTime tasks =
+    parallel [(Detached ('DM'.fromList [("title", "Scheduler " +++ toString dateTime)]) True, \_ -> (waitForDateTime dateTime >>| doTasks tasks))] [] ||- return ()
+    where
+    doTasks :: [Task a] -> Task () | iTask a
+    doTasks [] = return ()
+    doTasks [task:tasks] = task ||- doTasks tasks
+
+// ------------------------------------------------------------------ //
 // | Appointment tasks                                              | //
 // ------------------------------------------------------------------ //
 
@@ -173,7 +186,7 @@ makeAppointment = get currentUser
                        @ (\((title,when),(duration,participants)) -> {Appointment|id=id, title=title, when=when, duration=duration, owner=me, participants=participants})
         >>*                  [ OnAction (Action "Make") (hasValue (\appointment -> addAppointmentToShare appointment
                                >>= \_ -> viewInformation "Success" [] "The appointment has been added."
-                               >>= \_ -> makeAppointment))
+                               >>| return ()))
                              , OnAction (Action "Cancel") (always (return ()))
                              ]
 
@@ -182,19 +195,18 @@ addAppointmentToShare appointment = upd (\appointments -> [appointment : appoint
                           >>= \_ -> addAppointmentTasks appointment appointment.Appointment.participants
 
 addAppointmentTasks :: Appointment [User] -> Task ()
-addAppointmentTasks appointment [] = return ()
-addAppointmentTasks appointment [participant:participants] = 
-        assign
-            (workerAttributes participant
-                         [ ("title",      appointment.Appointment.title)
-                         , ("createdBy",  toString (toUserConstraint appointment.Appointment.owner))
-                         , ("createdAt",  toString appointment.Appointment.when)
-                         , ("completeBefore", toString (addTime appointment.Appointment.when appointment.Appointment.duration))
-                         , ("priority",   toString 5)
-                         , ("createdFor", toString (toUserConstraint participant))
-                         ]) 
-            (viewInformation "Appointment" [] appointment.Appointment.title)
-    ||-      addAppointmentTasks appointment participants
+addAppointmentTasks appointment participants = scheduleAtTime appointment.Appointment.when [
+    assign
+        (workerAttributes participant
+            [ ("title",      appointment.Appointment.title)
+            , ("createdBy",  toString (toUserConstraint appointment.Appointment.owner))
+            , ("createdAt",  toString appointment.Appointment.when)
+            , ("completeBefore", toString (addTime appointment.Appointment.when appointment.Appointment.duration))
+            , ("priority",   toString 5)
+            , ("createdFor", toString (toUserConstraint participant))
+        ]) 
+        (viewInformation "Appointment" [] appointment.Appointment.title)
+        \\ participant <- participants]
 
 // ------------------------------------------------------------------ //
 // | Proposal tasks                                                 | //
@@ -307,8 +319,8 @@ tasks :: [Workflow]
 tasks = [
     restrictedTransientWorkflow (adminTask +++ "Manage users") "Manage system users..." ["admin"] (forever manageUsers)
   , transientWorkflow (appointmentTask +++ "View appointments") "View your appointments" viewAppointments
-  , transientWorkflow (appointmentTask +++ "Make appointments") "Make new appointment" makeAppointment
-  , transientWorkflow (appointmentTask +++ "Make proposal") "Make new proposal" makeProposal
+  , transientWorkflow (appointmentTask +++ "Make appointments") "Make new appointment" (forever makeAppointment)
+  , transientWorkflow (appointmentTask +++ "Make proposal") "Make new proposal" (forever makeProposal)
   ]
 
 
