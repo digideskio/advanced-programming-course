@@ -9,6 +9,7 @@ import Data.List
 import iTasks
 import iTasks.Extensions.DateTime
 import System.Time
+import qualified Data.Map as DM
 
 // ------------------------------------------------------------------ //
 // | Data structures & utility functions                            | //
@@ -111,11 +112,7 @@ getNextID = get id
 
 scheduleAtTime :: DateTime [Task a] -> Task () | iTask a
 scheduleAtTime dateTime tasks =
-    /*assign
-        (workerAttributes "root"
-            [("title", "Scheduler " +++ toString dateTime)])
-        (waitForDateTime dateTime >>| doTasks tasks)*/
-    waitForDateTime dateTime >>| doTasks tasks
+    parallel [(Detached ('DM'.fromList [("title", "Scheduler " +++ toString dateTime)]) True, \_ -> (waitForDateTime dateTime >>| doTasks tasks))] [] ||- return ()
     where
     doTasks :: [Task a] -> Task () | iTask a
     doTasks [] = return ()
