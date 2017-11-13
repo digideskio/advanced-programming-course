@@ -34,7 +34,7 @@
 	When an appointment is created (either from \emph{Make appointments} or from scheduling from a \emph{Manage proposal} task), a parallel task is detached.
 	The task waits until the appointment start time, and then launches in parallel one task per participant to view the appointment.
 	These tasks wait until the appointment end time and then finish.
-	The tasks as detached, and not embedded, as a parallel task launched from a transient workflow is stopped once the transient workflow is closed.
+	The tasks are detached, and not embedded, as a parallel task launched from a transient workflow is stopped once the transient workflow is closed.
     
     \section{Canceling tasks}
 	We wanted to implement a method of gracefully canceling a task.
