@@ -176,7 +176,7 @@ scheduleAtTime dateTime tasks =
 viewAppointments :: Task [Appointment]
 viewAppointments = get currentUser 
         >>= \me              -> get currentDateTime 
-        >>= \now             -> viewSharedInformation "Appointment viewer" [ViewAs (map transformAppointment o filter (\app -> (isMember me app.Appointment.participants && app.Appointment.when > now)))] schedule
+        >>= \now             -> viewSharedInformation "Your upcoming appointments" [ViewAs (map transformAppointment o filter (\app -> (isMember me app.Appointment.participants && app.Appointment.when > now)))] schedule
 
 makeAppointment :: Task ()
 makeAppointment = get currentUser 
@@ -330,7 +330,7 @@ manageProposal proposal = getByID proposal.Proposal.id
 tasks :: [Workflow]
 tasks = [
     restrictedTransientWorkflow (adminTask +++ "Manage users") "Manage system users..." ["admin"] (forever manageUsers)
-  , transientWorkflow (appointmentTask +++ "View appointments") "View your appointments" viewAppointments
+  , transientWorkflow (appointmentTask +++ "View upcoming appointments") "View your upcoming appointments" viewAppointments
   , transientWorkflow (appointmentTask +++ "Make appointments") "Make new appointment" (forever makeAppointment)
   , transientWorkflow (appointmentTask +++ "Make proposal") "Make new proposal" (forever makeProposal)
   ]
