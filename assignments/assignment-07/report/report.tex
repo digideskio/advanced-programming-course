@@ -32,10 +32,11 @@
     This way, the user is notified that a date-time proposal process has taken place, although they were not in time to indicate their preferences.
     
     \section{Appointment creation and parallel tasks}
-	When an appointment is created (either from \emph{Make appointments} or from scheduling from a \emph{Manage proposal} task), a parallel task is detached.
-	The task waits until the appointment start time, and then launches in parallel one task per participant to view the appointment.
+	When an appointment is created (either from \emph{Make appointments} or from scheduling from a \emph{Manage proposal} task), a parallel scheduler task is detached.
+	The task waits until the appointment start time.
+	Once the appointment start time is reached, the scheduler task launches in parallel one task per participant to view the appointment.
 	These tasks wait until the appointment end time and then finish.
-	The tasks are detached, and not embedded, as a parallel task launched from a transient workflow is stopped once the transient workflow is closed.
+	The tasks are detached, and not embedded, as an embedded parallel task launched from a transient workflow is stopped once the transient workflow is closed.
     
     \section{Canceling tasks}
 	We wanted to implement a method of gracefully canceling a task.
