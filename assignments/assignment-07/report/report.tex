@@ -24,7 +24,8 @@
     Furthermore, an invitation task is created for all participants, and for the owner a proposal management task is created.
     In the proposal management task, all responses given so far are listed, and the owner can choose between the proposed date-times, and then click \emph{Schedule} to create an actual appointment for all participants.
     In this case, the proposal and its response list are removed from their respective databases to invalidate remaining proposal tasks.
-    As the response list is in a shared database, we let the displayed response list on the proposal management task update in real time, and so that the user can close the task and revisit it later.
+    As the response list is in a shared database, we let the displayed response list on the proposal management task update in real time, and the user can close the task and revisit it later.
+    
     When a user opens an invitation, we first check in the database whether the proposal still exists.
     If the proposal is still ongoing, we display the proposal and offer a checklist to choose which times are suitable, which is added to the corresponding entry in the response database.
     If the proposal no longer exists, then an appointment has already been scheduled, so we display the scheduled appointment instead.
@@ -41,7 +42,7 @@
 	For example, when working on the \emph{Manage proposal} task, a user might wish to cancel managing the proposal.
 	We have attempted to include a cancellation action, but have not been able to get this to work nicely with the workflow framework.
 	We tried returning various values, such as \lstinline|return ()|, \lstinline|throw "Cancel"|, and have tried changing the return type, as well as ending with an interaction task (\lstinline|viewInformation "Success" [] "Cancelled"|), but these either do not achieve the desired effect, or simply crash the iTasks GUI.
-	In the current version 2017-11-08 nightly version of iTasks, the ``Close"-button supplied by the iTasks worklist framework also crashes the GUI.
+	In the current version of iTasks (2017-11-08 nightly), the ``Close" button supplied by the iTasks worklist framework also crashes the GUI.
 	As such, we assume there is a bug in the current iTasks version that prevents such buttons from working as intended.
     
     \section{Cosmetic types}
