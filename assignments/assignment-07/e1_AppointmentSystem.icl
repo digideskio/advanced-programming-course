@@ -176,7 +176,7 @@ scheduleAtTime dateTime tasks =
 viewAppointments :: Task [Appointment]
 viewAppointments = get currentUser 
         >>= \me              -> get currentDateTime 
-        >>= \now             -> viewSharedInformation "Your upcoming appointments" [ViewAs (map transformAppointment o filter (\app -> (isMember me app.Appointment.participants && app.Appointment.when > now)))] schedule
+        >>= \now             -> viewSharedInformation "Your upcoming appointments" [ViewAs (map transformAppointment o sortBy (\app1 -> (\app2 -> app1.Appointment.when < app2.Appointment.when)) o filter (\app -> (isMember me app.Appointment.participants && app.Appointment.when > now)))] schedule
 
 makeAppointment :: Task ()
 makeAppointment = get currentUser 
@@ -218,7 +218,9 @@ addAppointmentTasks appointment participants
                 \_ -> (
                         (viewInformation "Appointment" [ViewAs transformAppointment] appointment)
                     -||-
-                        (viewSharedInformation ("Clock", "Appointment ends: " +++ toString until) [ViewAs \dt -> "  Now: " +++ toString dt] currentDateTime >>* [OnValue (ifValue (\now -> until < now) return)] >>| return appointment)
+                        (viewSharedInformation ("Clock", "Appointment ends: " +++ toString until) [ViewAs \dt -> "  Now: " +++ toString dt] currentDateTime >>* [OnValue (ifValue (\now -> until < now) return)]
+                            >>* [OnAction (Action "Done") (always (return appointment))]
+                        )
                 )
             )]
             []

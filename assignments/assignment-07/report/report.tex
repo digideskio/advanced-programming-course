@@ -27,6 +27,12 @@
     If the proposal no longer exists, then an appointment has already been scheduled, so we display the scheduled appointment instead.
     This way, the user is notified that a date-time proposal process has taken place, although they were not in time to indicate their preferences.
     
+    \section{Appointment creation and parallel tasks}
+	When an appointment is created (either from \emph{Make appointments} or from scheduling from a \emph{Manage proposal} task), a parallel task is detached.
+	The task waits until the appointment start time, and then launches in parallel one task per participant to view the appointment.
+	These tasks wait until the appointment end time and then finish.
+	The tasks as detached, and not embedded, as a parallel task launched from a transient workflow is stopped once the transient workflow is closed.
+    
     \section{Canceling tasks}
 	We wanted to implement a method of gracefully canceling a task.
 	For example, when working on the \emph{Manage proposal} task, a user might wish to cancel managing the proposal.
@@ -40,5 +46,5 @@
     Unfortunately, to be able to use \lstinline|viewInformation| to display them in a nicer way, we need a destination type with an \lstinline|iTask| implementation.
     Furthermore, simple tuples do not work, because they distribute layout space evenly; this is not what we want, as a list of participants requires more space than a title.
     Thus, we created `cosmetic types' for appointments, proposals and proposal responses purely for display purposes, resulting in a more readable participant list and/or response list.
-    
+	
 \end{document}
