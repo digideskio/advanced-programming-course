@@ -18,4 +18,10 @@
 	In the current version 2017-11-08 nightly version of iTasks, the ``Close"-button supplied by the iTasks worklist framework also crashes the GUI.
 	As such, we assume there is a bug in the current iTasks version that prevents such buttons from working as intended.
 	
+	\section{Appointment creation and parallel tasks}
+	When an appointment is created (either from \emph{Make appointments} or from scheduling from a \emph{Manage proposal} task), a parallel task is detached.
+	The task waits until the appointment start time, and then launches in parallel one task per participant to view the appointment.
+	These tasks wait until the appointment end time and then finish.
+	The tasks as detached, and not embedded, as a parallel task launched from a transient workflow is stopped once the transient workflow is closed.
+	
 \end{document}
