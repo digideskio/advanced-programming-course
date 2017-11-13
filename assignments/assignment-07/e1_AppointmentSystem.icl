@@ -203,16 +203,21 @@ addAppointmentTasks :: Appointment [User] -> Task ()
 addAppointmentTasks appointment participants
     # until = addTime appointment.Appointment.when appointment.Appointment.duration
     = scheduleAtTime appointment.Appointment.when [
-    assign
-        (workerAttributes participant
-            [ ("title",      appointment.Appointment.title)
-            , ("createdBy",  toString (toUserConstraint appointment.Appointment.owner))
-            , ("createdAt",  toString appointment.Appointment.when)
-            , ("completeBefore", toString until)
-            , ("priority",   toString 5)
-            , ("createdFor", toString (toUserConstraint participant))
-        ]) 
-        ((waitForDateTime until >>| return "") -||- viewInformation "Appointment" [] appointment.Appointment.title)
+        parallel
+            [(Detached
+                (workerAttributes participant
+                    [ ("title",      appointment.Appointment.title)
+                    , ("createdBy",  toString (toUserConstraint appointment.Appointment.owner))
+                    , ("createdAt",  toString appointment.Appointment.when)
+                    , ("completeBefore", toString until)
+                    , ("priority",   toString 5)
+                    , ("createdFor", toString (toUserConstraint participant))
+                    ]
+                )
+                True,
+                \_ -> ((waitForDateTime until >>| return "") -||- viewInformation "Appointment" [] appointment.Appointment.title)
+            )]
+            []
         \\ participant <- participants]
 
 // ------------------------------------------------------------------ //
