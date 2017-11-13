@@ -200,17 +200,19 @@ addAppointmentToShare appointment = upd (\appointments -> [appointment : appoint
                           >>= \_ -> addAppointmentTasks appointment appointment.Appointment.participants
 
 addAppointmentTasks :: Appointment [User] -> Task ()
-addAppointmentTasks appointment participants = scheduleAtTime appointment.Appointment.when [
+addAppointmentTasks appointment participants
+    # until = addTime appointment.Appointment.when appointment.Appointment.duration
+    = scheduleAtTime appointment.Appointment.when [
     assign
         (workerAttributes participant
             [ ("title",      appointment.Appointment.title)
             , ("createdBy",  toString (toUserConstraint appointment.Appointment.owner))
             , ("createdAt",  toString appointment.Appointment.when)
-            , ("completeBefore", toString (addTime appointment.Appointment.when appointment.Appointment.duration))
+            , ("completeBefore", toString until)
             , ("priority",   toString 5)
             , ("createdFor", toString (toUserConstraint participant))
         ]) 
-        (viewInformation "Appointment" [] appointment.Appointment.title)
+        ((waitForDateTime until >>| return "") -||- viewInformation "Appointment" [] appointment.Appointment.title)
         \\ participant <- participants]
 
 // ------------------------------------------------------------------ //
