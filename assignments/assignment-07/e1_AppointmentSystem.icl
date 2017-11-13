@@ -215,7 +215,7 @@ addAppointmentTasks appointment participants
                     ]
                 )
                 True,
-                \_ -> ((waitForDateTime until >>| return "") -||- viewInformation "Appointment" [] appointment.Appointment.title)
+                \_ -> ((waitForDateTime until >>| return appointment) -||- (viewInformation "Appointment" [ViewAs transformAppointment] appointment))
             )]
             []
         \\ participant <- participants]
