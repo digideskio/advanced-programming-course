@@ -218,7 +218,9 @@ addAppointmentTasks appointment participants
                 \_ -> (
                         (viewInformation "Appointment" [ViewAs transformAppointment] appointment)
                     -||-
-                        (viewSharedInformation ("Clock", "Appointment ends: " +++ toString until) [ViewAs \dt -> "  Now: " +++ toString dt] currentDateTime >>* [OnValue (ifValue (\now -> until < now) return)] >>| return appointment)
+                        (viewSharedInformation ("Clock", "Appointment ends: " +++ toString until) [ViewAs \dt -> "  Now: " +++ toString dt] currentDateTime >>* [OnValue (ifValue (\now -> until < now) return)]
+                            >>* [OnAction (Action "Done") (always (return appointment))]
+                        )
                 )
             )]
             []
