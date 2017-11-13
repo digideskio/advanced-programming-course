@@ -233,9 +233,9 @@ makeProposal = get currentUser
           updateDateTimes dates times = 
                                if (length dates > 1)
                                    (allTasks (zipWith (\date -> updateInformation ("Proposed times for " +++ toString date) []) dates times))
-                                   (updateInformation ("Proposed times for " +++ toString (hd dates)) [] [] @ (\ts -> [ts])) 
-                        >>*  [ OnAction (Action "Propose") (ifValue (all (not o isEmpty)) (\times -> return (combineDateTimes dates times)))
-                             , OnAction (Action "Copy times from first date") (ifValue (not o isEmpty o hd) (\times -> updateDateTimes dates (map (\_ -> hd times) dates)))
+                                   (updateInformation ("Proposed times for " +++ toString (hd dates)) [] [] @ (\times` -> [times`])) 
+                        >>*  [ OnAction (Action "Propose") (ifValue (all (not o isEmpty)) (\times` -> return (combineDateTimes dates times`)))
+                             , OnAction (Action "Copy times from first date") (ifValue (\times` -> length dates > 1 && not (isEmpty (hd times`))) (\times` -> updateDateTimes dates (map (\_ -> hd times`) dates)))
                              ]
           combineDateTimes dates times = flatten (zipWith (\date -> map (\time -> {DateTime | year=date.Date.year, mon=date.Date.mon, day=date.Date.day, hour=time.Time.hour, min=time.Time.min, sec=time.Time.sec})) dates times)
 
