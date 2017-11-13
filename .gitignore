@@ -14,3 +14,4 @@ Clean System Files
 *.log
 *.pdf
 *.synctex.gz
+*.dvi
