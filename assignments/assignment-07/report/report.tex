@@ -7,6 +7,9 @@
 \usepackage{listings}
 \lstset{basicstyle=\ttfamily}
 
+\usepackage{graphicx}
+\graphicspath{ {images/} }
+
 \begin{document}
 	\maketitle
 	
@@ -23,5 +26,59 @@
 	The task waits until the appointment start time, and then launches in parallel one task per participant to view the appointment.
 	These tasks wait until the appointment end time and then finish.
 	The tasks as detached, and not embedded, as a parallel task launched from a transient workflow is stopped once the transient workflow is closed.
+	
+	\newpage
+	\appendix
+	\section{Screenshots}
+	
+	\begin{figure}[h!]
+		\includegraphics[width=\textwidth]{01_login}
+		\caption{Logging in}
+	\end{figure}
+	
+	\begin{figure}[h!]
+		\includegraphics[width=\textwidth]{02_make_appointment}
+		\caption{Making an appointment}
+	\end{figure}
+	
+	\begin{figure}[h!]
+		\includegraphics[width=\textwidth]{03_appointment_added}
+		\caption{Appointment added}
+	\end{figure}
+	
+	\begin{figure}[h!]
+		\includegraphics[width=\textwidth]{04_make_proposal}
+		\caption{Proposing an appointment}
+	\end{figure}
+	
+	\begin{figure}[h!]
+		\includegraphics[width=\textwidth]{05_make_proposal_choose_dates}
+		\caption{Proposing an appointment: choose dates}
+	\end{figure}
+	
+	\begin{figure}[h!]
+		\includegraphics[width=\textwidth]{06_make_proposal_choose_times}
+		\caption{Proposing an appointment: choose times}
+	\end{figure}
+	
+	\begin{figure}[h!]
+		\includegraphics[width=\textwidth]{07_dave_choose_proposal_date_times}
+		\caption{Viewing the appointment invitation: choose available dates and times}
+	\end{figure}
+	
+	\begin{figure}[h!]
+		\includegraphics[width=\textwidth]{08_manage_proposal}
+		\caption{Managing the proposal: see responses and schedule}
+	\end{figure}
+	
+	\begin{figure}[h!]
+		\includegraphics[width=\textwidth]{09_view_appointment}
+		\caption{Viewing an active appointment}
+	\end{figure}
+	
+	\begin{figure}[h!]
+		\includegraphics[width=\textwidth]{10_upcoming_appointments}
+		\caption{Looking at upcoming appointments}
+	\end{figure}
 	
 \end{document}
