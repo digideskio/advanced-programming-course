@@ -303,14 +303,12 @@ sendManageProposal proposal = get currentDateTime
                          (manageProposal proposal)
             
 manageProposal :: Proposal -> Task ()
-manageProposal proposal = getByID proposal.Proposal.id
-        >>= \maybeResponse -> case maybeResponse of 
-            Nothing =          viewInformation "It seems you have already scheduled this appointment previously." [] () // (should not occur)
-            Just response =    viewInformation "Proposal responses." [ViewAs transformProposalResponse] response
+manageProposal proposal = let id = proposal.Proposal.id in get proposalResponses
+        >>= \responseList -> case any (\pr -> pr.ProposalResponse.id == id) responseList of 
+            False =            viewInformation "It seems you have already scheduled this appointment previously." [] () // (should not occur)
+            True =             viewSharedInformation "Proposal responses." [ViewAs (transformProposalResponse o hd o filter (\pr -> pr.ProposalResponse.id == id))] proposalResponses
                            ||- enterChoice "Select time" [ChooseFromGrid (\s -> s)] proposal.Proposal.when
-                           >>* [ OnAction (Action "Schedule") (hasValue (\dateTime -> scheduleTask proposal dateTime))
-                               , OnAction (Action "Return") (always (sendManageProposal proposal ||- return ())) // send again so task is not lost
-                               ]
+                           >>* [ OnAction (Action "Schedule") (hasValue (\dateTime -> scheduleTask proposal dateTime)) ]
     where scheduleTask proposal dateTime = let id = proposal.Proposal.id in
                                addAppointmentToShare {Appointment | id=id, title=proposal.Proposal.title, duration=proposal.Proposal.duration,
                                                                     owner=proposal.Proposal.owner, participants=proposal.Proposal.participants, when=dateTime}
