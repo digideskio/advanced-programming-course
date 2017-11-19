@@ -277,7 +277,7 @@ simulationTask s =
         viewInformation "Entered expression" [ViewAs \exp -> print exp +++ "\r\n" +++ case retVal of
             Left err = "Error: " +++ err
             Right value = "Value: " +++ printValue value] exp
-    >>>= \_ -> simulationTask newS 
+    >>>| simulationTask newS 
     
 enterExpressionTask :: Task Expression
 enterExpressionTask = 'iTasks'.enterInformation "Enter an expression" []
