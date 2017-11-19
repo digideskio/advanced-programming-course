@@ -33,6 +33,7 @@ import qualified Data.Set as Set
   | (-.) infixl 6 Expression Expression
   | (*.) infixl 7 Expression Expression
   | (=.) infixl 2 Ident Expression
+derive class iTask Expression
 
 :: Logical
   = TRUE | FALSE
@@ -42,12 +43,14 @@ import qualified Data.Set as Set
   | Not Logical
   | (||.) infixr 2 Logical Logical
   | (&&.) infixr 3 Logical Logical
+derive class iTask Logical
 
 :: Stmt
   = Expression Expression
   | Logical Logical
   | If Logical Stmt Stmt
   | For Ident SetExp Stmt
+derive class iTask Stmt
 
 :: SetExp :== Expression
 :: Elem   :== Expression
@@ -246,6 +249,24 @@ ActionOk   :== 'iTasks'.ActionOk
 ActionQuit :== 'iTasks'.ActionQuit
 ActionNew  :== 'iTasks'.ActionNew
 
+// Start = executeProgram sampleProgram
+// Start = print sampleProgram
+Start :: *World -> *World
+Start world = startEngine (simulationTask 'Map'.newMap) world
 
-Start = print sampleProgram
-    
+simulationTask :: State -> Task ()
+simulationTask s = viewInformation "Variables" [] (
+        map (
+            \(variable, value) -> (
+                variable,
+                case value of
+                    Int i = toString i
+                    Set s = print (New ('Set'.toList s))
+            )
+        ) ('Map'.toAscList s))
+    ||- enterStatementTask
+    >>>= \stmt -> viewInformation "Entered statement" [ViewAs \stmt -> print stmt] stmt
+    >>>= \_ -> 'iTasks'.return ()
+
+enterStatementTask :: Task Stmt
+enterStatementTask = 'iTasks'.enterInformation "Enter a statement" []
