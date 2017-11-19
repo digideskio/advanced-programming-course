@@ -267,22 +267,35 @@ printValue value = case value of
 simulationTask :: State -> Task ()
 simulationTask s = 
     (
-        viewInformation "Variables" [] (
-            map (
-                \(variable, value) -> (
-                    variable,
-                    case value of
-                        Int i = toString i
-                        Set s = print (New ('Set'.toList s))
-                )
-            ) ('Map'.toAscList s))
+        viewStateTask s
         ||- enterExpressionTask
     )
     >>>= \exp -> let (retVal, newS) = unS (eval exp) s in
-        viewInformation "Entered expression" [ViewAs \exp -> print exp +++ "\r\n" +++ case retVal of
-            Left err = "Error: " +++ err
-            Right value = "Value: " +++ printValue value] exp
+    (
+        viewStateTask s
+        ||-
+        viewInformation "Entered expression" [ViewAs \exp -> print exp] exp
+        ||-
+        (
+            case retVal of
+                Left err = viewInformation "Error" [] err >>>| 'iTasks'.return ()
+                Right value = viewInformation "Value" [] (printValue value) >>>| 'iTasks'.return ()
+        )
+    )
     >>>| simulationTask newS 
+    
+viewStateTask :: State -> Task ()
+viewStateTask s =
+    viewInformation "Variables" [] (
+        map (
+            \(variable, value) -> (
+                variable,
+                case value of
+                    Int i = toString i
+                    Set s = print (New ('Set'.toList s))
+            )
+        ) ('Map'.toAscList s))
+    >>>| 'iTasks'.return ()
     
 enterExpressionTask :: Task Expression
 enterExpressionTask = 'iTasks'.enterInformation "Enter an expression" []
