@@ -254,19 +254,30 @@ ActionNew  :== 'iTasks'.ActionNew
 Start :: *World -> *World
 Start world = startEngine (simulationTask 'Map'.newMap) world
 
-simulationTask :: State -> Task ()
-simulationTask s = viewInformation "Variables" [] (
-        map (
-            \(variable, value) -> (
-                variable,
-                case value of
-                    Int i = toString i
-                    Set s = print (New ('Set'.toList s))
-            )
-        ) ('Map'.toAscList s))
-    ||- enterStatementTask
-    >>>= \stmt -> viewInformation "Entered statement" [ViewAs \stmt -> print stmt] stmt
-    >>>= \_ -> 'iTasks'.return ()
+printValue :: Val -> String
+printValue value = case value of
+                       Int i = toString i
+                       Set s = print (New ('Set'.toList s))
 
-enterStatementTask :: Task Stmt
-enterStatementTask = 'iTasks'.enterInformation "Enter a statement" []
+simulationTask :: State -> Task ()
+simulationTask s = 
+    (
+        viewInformation "Variables" [] (
+            map (
+                \(variable, value) -> (
+                    variable,
+                    case value of
+                        Int i = toString i
+                        Set s = print (New ('Set'.toList s))
+                )
+            ) ('Map'.toAscList s))
+        ||- enterExpressionTask
+    )
+    >>>= \exp -> let (retVal, newS) = unS (eval exp) s in
+        viewInformation "Entered expression" [ViewAs \exp -> print exp +++ "\r\n" +++ case retVal of
+            Left err = "Error: " +++ err
+            Right value = "Value: " +++ printValue value] exp
+    >>>= \_ -> simulationTask newS 
+    
+enterExpressionTask :: Task Expression
+enterExpressionTask = 'iTasks'.enterInformation "Enter an expression" []
