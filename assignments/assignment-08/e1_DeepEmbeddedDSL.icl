@@ -176,6 +176,66 @@ sampleProgram =
     , For "i" (Variable "set") (Expression ("counter" =. Variable "counter" +. Variable "i" -. Elem 1)) // for i in set, counter += i - 1
     ] // at the end, counter should be the sum of set, i.e. 15
 
+// === Print view
+
+class print a :: a -> String
+
+// Helper class to print parentheses around non-literals
+class printParentheses a :: a -> String
+
+instance print Expression where
+    print (New set) = "{" +++ foldr (\i ss -> case ss of 
+            "" = toString i
+            _  = toString i +++ ", " +++ ss) "" set +++ "}"
+    print (Elem i) = toString i
+    print (Variable v) = v
+    print (Size sexp) = "|" +++ print sexp +++ "|"
+    print (e1 +. e2) = printParentheses e1 +++ " + " +++ printParentheses e2
+    print (e1 -. e2) = printParentheses e1 +++ " - " +++ printParentheses e2
+    print (e1 *. e2) = printParentheses e1 +++ " * " +++ printParentheses e2
+    print (v =. e2) = v +++ " = " +++ print e2
+        
+instance printParentheses Expression where
+    printParentheses exp = case exp of
+      New _      = print exp
+      Elem _     = print exp
+      Variable _ = print exp
+      Size _     = print exp
+      _          = "(" +++ print exp +++ ")"  
+
+instance print Logical where
+    print TRUE        = "True"
+    print FALSE       = "False"
+    print (Not log)   = "~" +++ print log
+    print (e In sexp) = print e +++ " in " +++ print sexp
+    print (e1 ==. e2) = printParentheses e1 +++ " == " +++ printParentheses e2
+    print (e1 <=. e2) = printParentheses e1 +++ " <= " +++ printParentheses e2
+    print (l1 ||. l2) = printParentheses l1 +++ " or " +++ printParentheses l2
+    print (l1 &&. l2) = printParentheses l1 +++ " and " +++ printParentheses l2
+        
+instance printParentheses Logical where
+    printParentheses exp = case exp of
+        TRUE   = print exp
+        FALSE  = print exp
+        Not _  = print exp
+        _ In _ = print exp
+        _      = "(" +++ print exp +++ ")" 
+
+instance print Stmt where
+    print (If cond then else) = "if " +++ printParentheses cond +++ " " +++ printParentheses then +++ " " +++ printParentheses else
+    print (For v sexp stmt)   = "for " +++ v +++ " in " +++ printParentheses sexp +++ ": " +++ printParentheses stmt
+    print (Expression e)      = print e
+    print (Logical log)       = print log
+    
+instance printParentheses Stmt where
+    printParentheses s = case s of
+        If _ _ _ = "(" +++ print s +++ ")"
+        For _ _ _ = "(" +++ print s +++ ")"
+        Expression _ = print s
+        Logical _ = print s 
+        
+instance print [Stmt] where
+    print stmts = foldr (\stmt ss -> print stmt +++ ";\n" +++ ss) "" stmts 
 
 // === Simulation
 
@@ -187,5 +247,5 @@ ActionQuit :== 'iTasks'.ActionQuit
 ActionNew  :== 'iTasks'.ActionNew
 
 
-Start = executeProgram sampleProgram
+Start = print sampleProgram
     
