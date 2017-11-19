@@ -1,9 +1,14 @@
 module e1_DeepEmbeddedDSL
 
+
 /*
-  Advanved Progrmming 2017, Assignment 8
-  Pieter Koopman, pieter@cs.ru.nl
-*/
+ * Jordi Riemens    s4243064
+ * Thomas Churchman s4206606
+ *
+ * Based on:
+ * Pieter Koopman, pieter@cs.ru.nl
+ * Skeleton for Advanced Programming, week 8, 2017
+ */
 
 from iTasks import class iTask, class toPrompt, class Publishable, instance Publishable Task,
 	instance toPrompt String, instance Functor Task, 
