@@ -295,7 +295,7 @@ viewStateTask s =
                     Set s = print (New ('Set'.toList s))
             )
         ) ('Map'.toAscList s))
-    >>>| 'iTasks'.return ()
+    ||- 'iTasks'.return ()
     
 enterExpressionTask :: Task Expression
 enterExpressionTask = 'iTasks'.enterInformation "Enter an expression" []
