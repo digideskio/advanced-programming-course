@@ -44,10 +44,10 @@ import qualified Data.Set as Set
   | (&&.) infixr 3 Logical Logical
 
 :: Stmt
-  = If Logical Stmt Stmt
-  | For Ident SetExp Stmt
-  | Expression Expression
+  = Expression Expression
   | Logical Logical
+  | If Logical Stmt Stmt
+  | For Ident SetExp Stmt
 
 :: SetExp :== Expression
 :: Elem   :== Expression
