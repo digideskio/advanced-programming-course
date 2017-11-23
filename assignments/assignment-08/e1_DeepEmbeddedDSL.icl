@@ -1,9 +1,14 @@
 module e1_DeepEmbeddedDSL
 
+
 /*
-  Advanved Progrmming 2017, Assignment 8
-  Pieter Koopman, pieter@cs.ru.nl
-*/
+ * Jordi Riemens    s4243064
+ * Thomas Churchman s4206606
+ *
+ * Based on:
+ * Pieter Koopman, pieter@cs.ru.nl
+ * Skeleton for Advanced Programming, week 8, 2017
+ */
 
 from iTasks import class iTask, class toPrompt, class Publishable, instance Publishable Task,
 	instance toPrompt String, instance Functor Task, 
@@ -33,6 +38,7 @@ import qualified Data.Set as Set
   | (-.) infixl 6 Expression Expression
   | (*.) infixl 7 Expression Expression
   | (=.) infixl 2 Ident Expression
+derive class iTask Expression
 
 :: Logical
   = TRUE | FALSE
@@ -42,12 +48,14 @@ import qualified Data.Set as Set
   | Not Logical
   | (||.) infixr 2 Logical Logical
   | (&&.) infixr 3 Logical Logical
+derive class iTask Logical
 
 :: Stmt
-  = If Logical Stmt Stmt
-  | For Ident SetExp Stmt
-  | Expression Expression
+  = Expression Expression
   | Logical Logical
+  | If Logical Stmt Stmt
+  | For Ident SetExp Stmt
+derive class iTask Stmt
 
 :: SetExp :== Expression
 :: Elem   :== Expression
@@ -176,6 +184,66 @@ sampleProgram =
     , For "i" (Variable "set") (Expression ("counter" =. Variable "counter" +. Variable "i" -. Elem 1)) // for i in set, counter += i - 1
     ] // at the end, counter should be the sum of set, i.e. 15
 
+// === Print view
+
+class print a :: a -> String
+
+// Helper class to print parentheses around non-literals
+class printParentheses a :: a -> String
+
+instance print Expression where
+    print (New set) = "{" +++ foldr (\i ss -> case ss of 
+            "" = toString i
+            _  = toString i +++ ", " +++ ss) "" set +++ "}"
+    print (Elem i) = toString i
+    print (Variable v) = v
+    print (Size sexp) = "|" +++ print sexp +++ "|"
+    print (e1 +. e2) = printParentheses e1 +++ " + " +++ printParentheses e2
+    print (e1 -. e2) = printParentheses e1 +++ " - " +++ printParentheses e2
+    print (e1 *. e2) = printParentheses e1 +++ " * " +++ printParentheses e2
+    print (v =. e2) = v +++ " = " +++ print e2
+        
+instance printParentheses Expression where
+    printParentheses exp = case exp of
+      New _      = print exp
+      Elem _     = print exp
+      Variable _ = print exp
+      Size _     = print exp
+      _          = "(" +++ print exp +++ ")"  
+
+instance print Logical where
+    print TRUE        = "True"
+    print FALSE       = "False"
+    print (Not log)   = "~" +++ print log
+    print (e In sexp) = print e +++ " in " +++ print sexp
+    print (e1 ==. e2) = printParentheses e1 +++ " == " +++ printParentheses e2
+    print (e1 <=. e2) = printParentheses e1 +++ " <= " +++ printParentheses e2
+    print (l1 ||. l2) = printParentheses l1 +++ " or " +++ printParentheses l2
+    print (l1 &&. l2) = printParentheses l1 +++ " and " +++ printParentheses l2
+        
+instance printParentheses Logical where
+    printParentheses exp = case exp of
+        TRUE   = print exp
+        FALSE  = print exp
+        Not _  = print exp
+        _ In _ = print exp
+        _      = "(" +++ print exp +++ ")" 
+
+instance print Stmt where
+    print (If cond then else) = "if " +++ printParentheses cond +++ " " +++ printParentheses then +++ " " +++ printParentheses else
+    print (For v sexp stmt)   = "for " +++ v +++ " in " +++ printParentheses sexp +++ ": " +++ printParentheses stmt
+    print (Expression e)      = print e
+    print (Logical log)       = print log
+    
+instance printParentheses Stmt where
+    printParentheses s = case s of
+        If _ _ _ = "(" +++ print s +++ ")"
+        For _ _ _ = "(" +++ print s +++ ")"
+        Expression _ = print s
+        Logical _ = print s 
+        
+instance print [Stmt] where
+    print stmts = foldr (\stmt ss -> print stmt +++ ";\n" +++ ss) "" stmts 
 
 // === Simulation
 
@@ -186,6 +254,48 @@ ActionOk   :== 'iTasks'.ActionOk
 ActionQuit :== 'iTasks'.ActionQuit
 ActionNew  :== 'iTasks'.ActionNew
 
+// Start = executeProgram sampleProgram
+// Start = print sampleProgram
+Start :: *World -> *World
+Start world = startEngine (simulationTask 'Map'.newMap) world
 
-Start = executeProgram sampleProgram
+printValue :: Val -> String
+printValue value = case value of
+                       Int i = toString i
+                       Set s = print (New ('Set'.toList s))
+
+simulationTask :: State -> Task ()
+simulationTask s = 
+    (
+        viewStateTask s
+        ||- enterExpressionTask
+    )
+    >>>= \exp -> let (retVal, newS) = unS (eval exp) s in
+    (
+        viewStateTask s
+        ||-
+        viewInformation "Entered expression" [ViewAs \exp -> print exp] exp
+        ||-
+        (
+            case retVal of
+                Left err = viewInformation "Error" [] err >>>| 'iTasks'.return ()
+                Right value = viewInformation "Value" [] (printValue value) >>>| 'iTasks'.return ()
+        )
+    )
+    >>>| simulationTask newS 
     
+viewStateTask :: State -> Task ()
+viewStateTask s =
+    viewInformation "Variables" [] (
+        map (
+            \(variable, value) -> (
+                variable,
+                case value of
+                    Int i = toString i
+                    Set s = print (New ('Set'.toList s))
+            )
+        ) ('Map'.toAscList s))
+    ||- 'iTasks'.return ()
+    
+enterExpressionTask :: Task Expression
+enterExpressionTask = 'iTasks'.enterInformation "Enter an expression" []
