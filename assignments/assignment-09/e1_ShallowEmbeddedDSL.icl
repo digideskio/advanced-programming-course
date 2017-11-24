@@ -94,7 +94,7 @@ set i = pure i
 size :: Set -> Element
 size s = length <$> s
 
-// aliases for read and store to confirm to last week's syntax
+// aliases for read and store to conform to last week's syntax
 variable :: Ident -> Sem a | TC a
 variable name = read name
 
