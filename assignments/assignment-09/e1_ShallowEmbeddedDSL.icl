@@ -106,46 +106,49 @@ variable name = read name
 (=.) name sem = sem >>= store name
 
 
-class +. a b c where
-    (+.) infixl 6 :: a b -> c
+class +. a b where
+    (+.) infixl 6 :: a b -> Set
 
-class -. a b c where
-    (-.) infixl 6 :: a b -> c
+class -. a b where
+    (-.) infixl 6 :: a b -> Set
 
-class *. a b c where
-    (*.) infixl 7 :: a b -> c
+class *. a b where
+    (*.) infixl 7 :: a b -> Set
 
 
-instance +. Element Element Element where
-    (+.) e1 e2 = (+) <$> e1 <*> e2
+instance + Element where
+    (+) e1 e2 = (+) <$> e1 <*> e2
 
-instance +. Element Set Set where
+instance +. Element Set where
     (+.) e s = (\i l -> [i:l]) <$> e <*> s
 
-instance +. Set Element Set where // flipped to preserve order of evaluation
+instance +. Set Element where // flipped to preserve order of evaluation
     (+.) s e = (\l i -> [i:l]) <$> s <*> e
 
-instance +. Set Set Set where 
+instance +. Set Set where 
     (+.) s1 s2 = 'List'.union <$> s1 <*> s2
 
 
-instance -. Element Element Element where
-    (-.) e1 e2 = (-) <$> e1 <*> e2
+instance - Element where
+    (-) e1 e2 = (-) <$> e1 <*> e2
 
-instance -. Set Element Set where // flipped to preserve order of evaluation
+instance -. Set Element where // flipped to preserve order of evaluation
     (-.) s e = (flip 'List'.delete) <$> s <*> e 
 
-instance -. Set Set Set where 
+instance -. Set Set where 
     (-.) s1 s2 = 'List'.difference <$> s1 <*> s2
 
 
-instance *. Element Element Element where
-    (*.) e1 e2 = (*) <$> e1 <*> e2
+instance * Element where
+    (*) e1 e2 = (*) <$> e1 <*> e2
 
-instance *. Element Set Set where // flipped to preserve order of evaluation
+instance *. Element Set where // flipped to preserve order of evaluation
     (*.) e s = (\i -> map ((*) i)) <$> e <*> s
+    
+instance *. Set Element where // flipped to preserve order of evaluation
+    (*.) s e = (\i -> map ((*) i)) <$> e <*> s
 
-instance *. Set Set Set where 
+instance *. Set Set where 
     (*.) s1 s2 = 'List'.intersect <$> s1 <*> s2
 
 //////////////////////////////////////////////////
@@ -157,14 +160,13 @@ class ==. a b c where
 
 instance ==. Element Element Logical where
     (==.) e1 e2 = (==) <$> e1 <*> e2
-    
 
 //////////////////////////////////////////////////
 // Evaluation                                   //
 //////////////////////////////////////////////////
 
 expr1 :: Element
-expr1 = "v" =. integer 6 *. integer 7
+expr1 = "v" =. integer 6 * integer 7
 
 expr2 :: Set
 expr2 = v +. set [1337]
@@ -172,7 +174,7 @@ expr2 = v +. set [1337]
           v = variable "v"
 
 expr3 :: Logical
-expr3 = integer 6 ==. integer 7 -. integer 1
+expr3 = integer 6 ==. integer 7
 
 eval :: (Sem a) State -> Either String a
 eval e s = fst (unS e s)
