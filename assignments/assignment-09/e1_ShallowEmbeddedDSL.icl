@@ -81,6 +81,7 @@ fail err = S \s0 -> (Left err, s0)
 
 :: Element :== Sem Int
 :: Set :== Sem [Int]
+:: Logical :== Sem Bool
 
 flip :: (a b -> c) -> (b a -> c)
 flip f = \b a -> f a b
@@ -90,6 +91,9 @@ integer i = pure i
 
 set :: [Int] -> Set
 set i = pure i
+
+logical :: Bool -> Logical
+logical b = pure b
 
 size :: Set -> Element
 size s = length <$> s
@@ -144,6 +148,16 @@ instance *. Element Set Set where // flipped to preserve order of evaluation
 instance *. Set Set Set where 
     (*.) s1 s2 = 'List'.intersect <$> s1 <*> s2
 
+//////////////////////////////////////////////////
+// Logicals                                     //
+//////////////////////////////////////////////////
+
+class ==. a b c where
+    (==.) infixl 5 :: a b -> c
+
+instance ==. Element Element Logical where
+    (==.) e1 e2 = (==) <$> e1 <*> e2
+    
 
 //////////////////////////////////////////////////
 // Evaluation                                   //
@@ -157,9 +171,12 @@ expr2 = v +. set [1337]
     where v :: Element
           v = variable "v"
 
+expr3 :: Logical
+expr3 = integer 6 ==. integer 7 -. integer 1
+
 eval :: (Sem a) State -> Either String a
 eval e s = fst (unS e s)
 
-Start = eval (expr1 >>= \_ -> expr2) initState
+Start = eval (expr1 >>= \_ -> expr3) initState
 
 
