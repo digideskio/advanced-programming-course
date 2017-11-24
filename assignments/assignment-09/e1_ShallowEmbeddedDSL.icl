@@ -155,11 +155,22 @@ instance *. Set Set where
 // Logicals                                     //
 //////////////////////////////////////////////////
 
-class ==. a b c where
-    (==.) infixl 5 :: a b -> c
+class ==. a b where
+    (==.) infixl 5 :: a b -> Logical
 
-instance ==. Element Element Logical where
+instance ==. Element Element where
     (==.) e1 e2 = (==) <$> e1 <*> e2
+   
+/*    
+instance ==. Set Set where
+    (==.) s1 s2 = (\s1 s2 -> length ('List'.difference s1 s2) == 0) <$> s1 <*> s2
+*/
+
+class <=. a b where
+    (<=.) infixl 5 :: a b -> Logical
+    
+instance <=. Element Element where
+    (<=.) e1 e2 = (<=) <$> e1 <*> e2
 
 //////////////////////////////////////////////////
 // Evaluation                                   //
