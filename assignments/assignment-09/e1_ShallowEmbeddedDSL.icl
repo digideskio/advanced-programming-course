@@ -90,7 +90,7 @@ integer :: Int -> Element
 integer i = pure i
 
 set :: [Int] -> Set
-set i = pure i
+set s = pure s
 
 logical :: Bool -> Logical
 logical b = pure b
@@ -161,10 +161,8 @@ class ==. a b where
 instance ==. Element Element where
     (==.) e1 e2 = (==) <$> e1 <*> e2
    
-/*    
 instance ==. Set Set where
-    (==.) s1 s2 = (\s1 s2 -> length ('List'.difference s1 s2) == 0) <$> s1 <*> s2
-*/
+    (==.) s1 s2 = (\s1 s2 -> length ('List'.difference s1 s2) == 0 && length ('List'.difference s2 s1) == 0)  <$> s1 <*> s2
 
 class <=. a b where
     (<=.) infixl 5 :: a b -> Logical
