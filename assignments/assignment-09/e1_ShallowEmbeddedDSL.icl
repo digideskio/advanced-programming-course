@@ -190,7 +190,30 @@ not l = ((==) False) <$> l
     
 (&&.) infixl 7 :: Logical Logical -> Logical
 (&&.) l1 l2 = (&&) <$> l1 <*> l2
-    
+
+//////////////////////////////////////////////////
+// Statements                                   //
+//////////////////////////////////////////////////
+undef = undef 
+(:.) infixr 1 :: (Sem a) (Sem b) -> Sem b
+(:.) a b = a >>| b
+
+for :: Ident In Set Do (Sem a) -> Sem ()
+for ident In set Do stmts = set >>= \set` -> (
+                                  case set` of
+                                      [] = pure ()
+                                      [s:ss] = ((ident =. pure s) :. stmts) :. for ident In (pure ss) Do stmts
+                              )
+
+:: In = In
+:: Do = Do
+
+if` :: Logical Then (Sem a) Else (Sem a) -> Sem a
+if` l Then stmts1 Else stmts2 = l >>= \bool -> if bool stmts1 stmts2
+
+:: Then = Then
+:: Else = Else
+
 //////////////////////////////////////////////////
 // Evaluation                                   //
 //////////////////////////////////////////////////
