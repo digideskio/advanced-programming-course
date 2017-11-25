@@ -229,9 +229,15 @@ expr2 = v +. set [1337]
 expr3 :: Logical
 expr3 = not (integer 6 ==. integer 7 + integer 2)
 
+stmt1 :: Element
+stmt1 = "sum" =. integer 0 :.
+        for "v" In (set [1,3,5,7,9,11,13]) Do
+            ("sum" =. (variable "sum") + integer 0 + (variable "v")) :.
+        variable "sum"
+
 eval :: (Sem a) State -> Either String a
 eval e s = fst (unS e s)
 
-Start = eval (expr1 >>= \_ -> expr3) initState
+Start = eval (expr1 >>= \_ -> stmt1) initState
 
 
