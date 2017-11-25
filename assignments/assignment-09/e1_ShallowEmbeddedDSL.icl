@@ -83,14 +83,15 @@ instance Applicative Views where
   
 instance Monad Views where
     bind va f =
-        { va &
+        {
             a = \state0 -> case va.a state0 of
                 (Right ret1, state1) -> let vf = (f ret1) in vf.a state1
-                (Left err, state1)   -> (Left err, state1)
+                (Left err, state1)   -> (Left err, state1),
+            s = let vf = f undef in va.s ++ vf.s
         }
 
 show :: String (Views a) -> Views a
-show str views = {views & s = [str:views.s]}
+show str views = {views & s = [str : views.s]}
 
 store :: Ident a -> Sem a | TC a
 store name val = \s0 -> (Right val, 'Map'.put name (dynamic val) s0)
@@ -122,20 +123,25 @@ integer :: Int -> Element
 integer i = show (toString i) (pure i)
 
 set :: [Int] -> Set
-set s = pure ('List'.nub s)
-
+set s = let s` = 'List'.nub s in show ("{" +++ toString` s +++ "}") (pure s`)
+    where
+    toString` :: [Int] -> String
+    toString` [] = ""
+    toString` [i] = toString i
+    toString` [i:is] = toString i +++ ", " +++ toString` is
+    
 logical :: Bool -> Logical
-logical b = pure b
+logical b = show (toString b) (pure b)
 
 size :: Set -> Element
-size s = length <$> s
+size s = length <$> show "|" s >>= \s -> show "|" (pure s) 
 
 // aliases for read and store to conform to last week's syntax
 variable :: Ident -> Views a | TC a
 variable name = {a = read name, s = [name]}
 
 (=.) infixl 2 :: Ident (Views a) -> Views a | TC a
-(=.) name va = show (name +++ " =. ") va >>= \a -> {va & a = store name a}
+(=.) name va = show (name +++ " =. ") va >>= \a -> {a = store name a, s = []}
 
 class +. a b where
     (+.) infixl 6 :: a b -> Set
@@ -193,34 +199,34 @@ false :: Logical
 false = logical False
 
 inSet :: Element Set -> Logical
-inSet e s = 'List'.isMember <$> e <*> s
+inSet e s = 'List'.isMember <$> e <*> show " in " s
 
 class ==. a where
     (==.) infixl 5 :: a a -> Logical
 
 instance ==. Element where
-    (==.) e1 e2 = (==) <$> e1 <*> e2
+    (==.) e1 e2 = (==) <$> e1 <*> show "==" e2
    
 instance ==. Set where
-    (==.) s1 s2 = (\s1 s2 -> length ('List'.difference s1 s2) == 0 && length ('List'.difference s2 s1) == 0)  <$> s1 <*> s2
+    (==.) s1 s2 = (\s1 s2 -> length ('List'.difference s1 s2) == 0 && length ('List'.difference s2 s1) == 0)  <$> s1 <*> show "==" s2
 
 class <=. a where
     (<=.) infixl 5 :: a a -> Logical
     
 instance <=. Element where
-    (<=.) e1 e2 = (<=) <$> e1 <*> e2
+    (<=.) e1 e2 = (<=) <$> e1 <*> show "<=" e2
     
 instance <=. Set where
-    (<=.) s1 s2 = (\s1 s2 -> length ('List'.difference s1 s2) == 0) <$> s2 <*> s2
+    (<=.) s1 s2 = (\s1 s2 -> length ('List'.difference s1 s2) == 0) <$> s2 <*> show "<=" s2
    
 not :: Logical -> Logical
-not l = ((==) False) <$> l
+not l = ((==) False) <$> show "!" l
     
 (||.) infixl 7 :: Logical Logical -> Logical
-(||.) l1 l2 = (||) <$> l1 <*> l2
+(||.) l1 l2 = (||) <$> l1 <*> show "||" l2
     
 (&&.) infixl 7 :: Logical Logical -> Logical
-(&&.) l1 l2 = (&&) <$> l1 <*> l2
+(&&.) l1 l2 = (&&) <$> l1 <*> show "&&" l2
 
 //////////////////////////////////////////////////
 // Statements                                   //
@@ -230,7 +236,7 @@ undef = undef
 (:.) a b = a >>| show ";\n" b
 
 for :: Ident In Set Do (Views a) -> Views ()
-for ident In set Do stmts = set >>= \set` -> (
+for ident In set Do stmts = show ("for " +++ ident +++ " in ") set >>= \set` -> show " do" (
                                   case set` of
                                       [] = pure ()
                                       [s:ss] = ((ident =. pure s) :. stmts) :. for ident In (pure ss) Do stmts
@@ -273,8 +279,9 @@ print :: (Views a) -> String
 print va = foldr (+++) "" va.s
 
 Start
-    //# prog = expr1 >>| expr2
+    //# prog = expr1 :. expr2
     # prog = stmt1
-    = (eval prog initState, prog.s)
+    //# prog = "a" =. integer 6
+    = (eval prog initState, "asd...", print prog, "Test....", prog.s)
 
 
