@@ -90,7 +90,7 @@ integer :: Int -> Element
 integer i = pure i
 
 set :: [Int] -> Set
-set s = pure s
+set s = pure ('List'.nub s)
 
 logical :: Bool -> Logical
 logical b = pure b
