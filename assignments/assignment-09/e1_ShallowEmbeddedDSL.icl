@@ -155,6 +155,15 @@ instance *. Set Set where
 // Logicals                                     //
 //////////////////////////////////////////////////
 
+true :: Logical
+true = logical True
+
+false :: Logical
+false = logical False
+
+inSet :: Element Set -> Logical
+inSet e s = 'List'.isMember <$> e <*> s
+
 class ==. a where
     (==.) infixl 5 :: a a -> Logical
 
@@ -172,6 +181,15 @@ instance <=. Element where
     
 instance <=. Set where
     (<=.) s1 s2 = (\s1 s2 -> length ('List'.difference s1 s2) == 0) <$> s2 <*> s2
+   
+not :: Logical -> Logical
+not l = ((==) False) <$> l
+    
+(||.) infixl 7 :: Logical Logical -> Logical
+(||.) l1 l2 = (||) <$> l1 <*> l2
+    
+(&&.) infixl 7 :: Logical Logical -> Logical
+(&&.) l1 l2 = (&&) <$> l1 <*> l2
     
 //////////////////////////////////////////////////
 // Evaluation                                   //
@@ -186,7 +204,7 @@ expr2 = v +. set [1337]
           v = variable "v"
 
 expr3 :: Logical
-expr3 = integer 6 ==. integer 7
+expr3 = not (integer 6 ==. integer 7 + integer 2)
 
 eval :: (Sem a) State -> Either String a
 eval e s = fst (unS e s)
