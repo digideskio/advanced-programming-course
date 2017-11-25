@@ -34,37 +34,69 @@ import qualified Data.Set as Set
 
 :: Ident :== String
 :: State :== 'Map'.Map Ident Dynamic
-:: Sem a = S (State -> (Either String a, State))
+:: Views a = {a :: Sem a, s :: [String]}
+:: Sem a :== State -> (Either String a, State)
 
+/*
 unS :: (Sem a) -> State -> (Either String a, State)
 unS (S f) = f
+*/
 
 initState :: State
 initState = 'Map'.newMap
 
+/*
 instance Functor Sem where
-    fmap f prog = S \s0 -> case unS prog s0 of
+    fmap f prog = \s0 -> case prog s0 of
         (Right ret, s1)  -> (Right (f ret), s1)
         (Left err, s1)   -> (Left err, s1)
 
 instance Applicative Sem where
-    pure x = S \s0 -> (Right x, s0)
-    (<*>) f x = S \s0 -> case unS f s0 of
-        (Right ret1, s1) -> case unS x s1 of
+    pure x = \s0 -> (Right x, s0)
+    (<*>) f x = \s0 -> case f s0 of
+        (Right ret1, s1) -> case x s1 of
             (Right ret2, s2) -> (Right (ret1 ret2), s2)
             (Left err, s2)   -> (Left err, s2)
         (Left err, s1)   -> (Left err, s1)
 
 instance Monad Sem where
-    bind x f = S \s0 -> case unS x s0 of
-        (Right ret1, s1) -> unS (f ret1) s1
+    bind x f = \s0 -> case x s0 of
+        (Right ret1, s1) -> (f ret1) s1
         (Left err, s1)   -> (Left err, s1)
+*/      
+
+instance Functor Views where
+    fmap f views = {views & a = (\state -> let (r, state2) = views.a state in (fmap f r, state2))}
+
+
+instance Applicative Views where
+    pure a = {a = (\s -> (Right a, s)), s = []}
+    <*> vf va = {
+                    a = (\state -> case vf.a state of
+                            (Right ret1, state1) -> case va.a state1 of
+                                (Right ret2, state2) -> (Right (ret1 ret2), state2)
+                                (Left err, state2)   -> (Left err, state2)
+                            (Left err, state1)   -> (Left err, state1)
+                        )
+                    , s = vf.s ++ va.s
+                }
+  
+instance Monad Views where
+    bind va f =
+        { va &
+            a = \state0 -> case va.a state0 of
+                (Right ret1, state1) -> let vf = (f ret1) in vf.a state1
+                (Left err, state1)   -> (Left err, state1)
+        }
+
+show :: String (Views a) -> Views a
+show str views = {views & s = [str:views.s]}
 
 store :: Ident a -> Sem a | TC a
-store name val = S \s0 -> (Right val, 'Map'.put name (dynamic val) s0)
+store name val = \s0 -> (Right val, 'Map'.put name (dynamic val) s0)
 
 read :: Ident -> Sem a | TC a
-read name = S \s0 -> case 'Map'.get name s0 of
+read name = \s0 -> case 'Map'.get name s0 of
     Nothing -> (Left ("The following variable could not be found: " +++ name), s0)
     Just val -> (typecheck name val, s0)
         where typecheck :: Ident Dynamic -> (Either String a) | TC a
@@ -72,16 +104,16 @@ read name = S \s0 -> case 'Map'.get name s0 of
               typecheck name e      = Left ("Used variable is of wrong type: " +++ name)
 
 fail :: String -> Sem a
-fail err = S \s0 -> (Left err, s0)
+fail err = \s0 -> (Left err, s0)
 
 
 //////////////////////////////////////////////////
 // Expressions                                  //
 //////////////////////////////////////////////////
 
-:: Element :== Sem Int
-:: Set :== Sem [Int]
-:: Logical :== Sem Bool
+:: Element :== Views Int
+:: Set :== Views [Int]
+:: Logical :== Views Bool
 
 flip :: (a b -> c) -> (b a -> c)
 flip f = \b a -> f a b
@@ -99,12 +131,11 @@ size :: Set -> Element
 size s = length <$> s
 
 // aliases for read and store to conform to last week's syntax
-variable :: Ident -> Sem a | TC a
-variable name = read name
+variable :: Ident -> Views a | TC a
+variable name = {a = read name, s = [name]}
 
-(=.) infixl 2 :: Ident (Sem a) -> Sem a | TC a
-(=.) name sem = sem >>= store name
-
+(=.) infixl 2 :: Ident (Views a) -> Views a | TC a
+(=.) name va = show "=." va >>= \a -> {va & a = store name a}
 
 class +. a b where
     (+.) infixl 6 :: a b -> Set
@@ -117,39 +148,39 @@ class *. a b where
 
 
 instance + Element where
-    (+) e1 e2 = (+) <$> e1 <*> e2
+    (+) e1 e2 = (+) <$> e1 <*> show "+" e2
 
 instance +. Element Set where
-    (+.) e s = (\i l -> [i:l]) <$> e <*> s
+    (+.) e s = (\i l -> [i:l]) <$> e <*> show "+." s
 
 instance +. Set Element where // flipped to preserve order of evaluation
-    (+.) s e = (\l i -> [i:l]) <$> s <*> e
+    (+.) s e = (\l i -> [i:l]) <$> s <*> show "+." e
 
 instance +. Set Set where 
-    (+.) s1 s2 = 'List'.union <$> s1 <*> s2
+    (+.) s1 s2 = 'List'.union <$> s1 <*> show "+." s2
 
 
 instance - Element where
-    (-) e1 e2 = (-) <$> e1 <*> e2
+    (-) e1 e2 = (-) <$> e1 <*> show "-" e2
 
 instance -. Set Element where // flipped to preserve order of evaluation
-    (-.) s e = (flip 'List'.delete) <$> s <*> e 
+    (-.) s e = (flip 'List'.delete) <$> s <*> show "-." e 
 
 instance -. Set Set where 
-    (-.) s1 s2 = 'List'.difference <$> s1 <*> s2
+    (-.) s1 s2 = 'List'.difference <$> s1 <*> show "-." s2
 
 
 instance * Element where
-    (*) e1 e2 = (*) <$> e1 <*> e2
+    (*) e1 e2 = (*) <$> e1 <*> show "*" e2
 
 instance *. Element Set where // flipped to preserve order of evaluation
-    (*.) e s = (\i -> map ((*) i)) <$> e <*> s
+    (*.) e s = (\i -> map ((*) i)) <$> e <*> show "*." s
     
 instance *. Set Element where // flipped to preserve order of evaluation
-    (*.) s e = (\i -> map ((*) i)) <$> e <*> s
+    (*.) s e = (\i -> map ((*) i)) <$> e <*> show "*." s
 
 instance *. Set Set where 
-    (*.) s1 s2 = 'List'.intersect <$> s1 <*> s2
+    (*.) s1 s2 = 'List'.intersect <$> s1 <*> show "*." s2
 
 //////////////////////////////////////////////////
 // Logicals                                     //
@@ -195,10 +226,10 @@ not l = ((==) False) <$> l
 // Statements                                   //
 //////////////////////////////////////////////////
 undef = undef 
-(:.) infixr 1 :: (Sem a) (Sem b) -> Sem b
+(:.) infixr 1 :: (Views a) (Views b) -> Views b
 (:.) a b = a >>| b
 
-for :: Ident In Set Do (Sem a) -> Sem ()
+for :: Ident In Set Do (Views a) -> Views ()
 for ident In set Do stmts = set >>= \set` -> (
                                   case set` of
                                       [] = pure ()
@@ -208,7 +239,7 @@ for ident In set Do stmts = set >>= \set` -> (
 :: In = In
 :: Do = Do
 
-if` :: Logical Then (Sem a) Else (Sem a) -> Sem a
+if` :: Logical Then (Views a) Else (Views a) -> Views a
 if` l Then stmts1 Else stmts2 = l >>= \bool -> if bool stmts1 stmts2
 
 :: Then = Then
@@ -235,9 +266,15 @@ stmt1 = "sum" =. integer 0 :.
             ("sum" =. (variable "sum") + integer 0 + (variable "v")) :.
         variable "sum"
 
-eval :: (Sem a) State -> Either String a
-eval e s = fst (unS e s)
+eval :: (Views a) State -> Either String a
+eval va s = fst (va.a s)
 
-Start = eval (expr1 >>= \_ -> stmt1) initState
+print :: (Views a) -> String
+print va = foldr (+++) "" va.s
+
+Start
+    //# prog = expr1 >>| expr2
+    # prog = stmt1
+    = (eval prog initState, print prog)
 
 
