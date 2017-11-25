@@ -119,7 +119,7 @@ flip :: (a b -> c) -> (b a -> c)
 flip f = \b a -> f a b
 
 integer :: Int -> Element
-integer i = pure i
+integer i = show (toString i) (pure i)
 
 set :: [Int] -> Set
 set s = pure ('List'.nub s)
@@ -135,7 +135,7 @@ variable :: Ident -> Views a | TC a
 variable name = {a = read name, s = [name]}
 
 (=.) infixl 2 :: Ident (Views a) -> Views a | TC a
-(=.) name va = show "=." va >>= \a -> {va & a = store name a}
+(=.) name va = show (name +++ " =. ") va >>= \a -> {va & a = store name a}
 
 class +. a b where
     (+.) infixl 6 :: a b -> Set
@@ -227,7 +227,7 @@ not l = ((==) False) <$> l
 //////////////////////////////////////////////////
 undef = undef 
 (:.) infixr 1 :: (Views a) (Views b) -> Views b
-(:.) a b = a >>| b
+(:.) a b = a >>| show ";\n" b
 
 for :: Ident In Set Do (Views a) -> Views ()
 for ident In set Do stmts = set >>= \set` -> (
@@ -275,6 +275,6 @@ print va = foldr (+++) "" va.s
 Start
     //# prog = expr1 >>| expr2
     # prog = stmt1
-    = (eval prog initState, print prog)
+    = (eval prog initState, prog.s)
 
 
