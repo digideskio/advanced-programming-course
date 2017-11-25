@@ -164,12 +164,15 @@ instance ==. Element where
 instance ==. Set where
     (==.) s1 s2 = (\s1 s2 -> length ('List'.difference s1 s2) == 0 && length ('List'.difference s2 s1) == 0)  <$> s1 <*> s2
 
-class <=. a b where
-    (<=.) infixl 5 :: a b -> Logical
+class <=. a where
+    (<=.) infixl 5 :: a a -> Logical
     
-instance <=. Element Element where
+instance <=. Element where
     (<=.) e1 e2 = (<=) <$> e1 <*> e2
-
+    
+instance <=. Set where
+    (<=.) s1 s2 = (\s1 s2 -> length ('List'.difference s1 s2) == 0) <$> s2 <*> s2
+    
 //////////////////////////////////////////////////
 // Evaluation                                   //
 //////////////////////////////////////////////////
