@@ -160,7 +160,7 @@ instance +. Element Set where
     (+.) e s = (\i l -> [i:l]) <$> e <*> show "+." s
 
 instance +. Set Element where // flipped to preserve order of evaluation
-    (+.) s e = (\l i -> [i:l]) <$> s <*> show "+." e
+    (+.) s e = (\l i -> l ++ [i]) <$> s <*> show "+." e
 
 instance +. Set Set where 
     (+.) s1 s2 = 'List'.union <$> s1 <*> show "+." s2
