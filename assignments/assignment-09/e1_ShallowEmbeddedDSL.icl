@@ -345,6 +345,6 @@ Start
     //# prog = stmt1
     //# prog = "a" =. integer 6
     # prog = fac2 5
-    = (eval prog initState, "asd...", print prog, "Test....", prog.s)
+    = (eval prog initState, "\n------\n" +++ print prog +++ "\n")
 
 
