@@ -20,7 +20,6 @@ import qualified Data.Map as Map
 import Data.Either
 import qualified Data.Set as Set
 
-
 //////////////////////////////////////////////////
 // Semantics                                    //
 //////////////////////////////////////////////////
@@ -240,7 +239,7 @@ for :: Ident In Set Do (Views a) -> Views ()
 for ident In set Do stmts = {
                                 a = \state -> case set.a state of
                                         (Right set`, state2) -> evalFor ident set` stmts state2
-                                , s = ["for ", ident, " in "] ++ set.s ++ [" do {\n"] ++ stmts.s ++ ["\n}"]
+                                , s = ["for ", ident, " in "] ++ set.s ++ [" do {\n"] ++ indent stmts.s ++ ["\n}"]
                             }
     where
     evalFor :: Ident [Int] (Views a) -> Sem ()
@@ -258,7 +257,7 @@ If condition Then then Else else = {
                                      (Right bool, state2) = if bool then.a else.a state2
                                      (Left err, state2) = (Left err, state2)
                                  )
-                             , s = ["if ("] ++ condition.s ++ [") then {\n"] ++ then.s ++ ["\n} else {\n"] ++ else.s ++ ["\n}"]
+                             , s = ["if ("] ++ condition.s ++ [") then {\n"] ++ indent then.s ++ ["\n} else {\n"] ++ indent else.s ++ ["\n}"]
                          }
 
 :: Then = Then
@@ -287,6 +286,14 @@ stmt1 = "sum" =. integer 0 :.
 
 eval :: (Views a) State -> Either String a
 eval va s = fst (va.a s)
+
+// Hacky indentation function
+indent :: [String] -> [String]
+indent [] = []
+indent [s:ss] = indent` ["    " +++ s : ss]
+    where
+    indent` [] = []
+    indent` [s:ss] = [foldr (+++) "" [if (c == "\n") "\n    " c \\ c <- fromString s] : indent` ss]
 
 print :: (Views a) -> String
 print va = foldr (+++) "" va.s
