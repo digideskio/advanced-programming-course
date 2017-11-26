@@ -219,6 +219,15 @@ instance <=. Element where
 instance <=. Set where
     (<=.) s1 s2 = (\s1 s2 -> length ('List'.difference s1 s2) == 0) <$> s2 <*> show "<=" s2
    
+class <. a where
+    (<.) infixl 5 :: a a -> Logical
+    
+instance <. Element where
+    (<.) e1 e2 = (<) <$> e1 <*> show "<" e2
+    
+instance <. Set where
+    (<.) s1 s2 = (\s1 s2 -> length ('List'.difference s1 s2) == 0 && length s1 < length s2) <$> s2 <*> show "<=" s2
+   
 not :: Logical -> Logical
 not l = ((==) False) <$> show "!" l
     
@@ -235,6 +244,9 @@ not l = ((==) False) <$> show "!" l
 (:.) infixr 1 :: (Views a) (Views b) -> Views b
 (:.) a b = a >>| show ";\n" b
 
+:: In = In
+:: Do = Do
+
 for :: Ident In Set Do (Views a) -> Views ()
 for ident In set Do stmts = {
                                 a = \state -> case set.a state of
@@ -248,8 +260,23 @@ for ident In set Do stmts = {
                                            let (_, state3) = stmts.a state2 in
                                            evalFor ident ss stmts state3
 
-:: In = In
-:: Do = Do
+while :: Logical Do (Views a) -> Views ()
+while condition Do stmts = {   a = \state -> evalWhile condition stmts state
+                               , s = ["while "] ++ condition.s ++ [" do {\n"] ++ indent stmts.s ++ ["\n}"]
+                           }
+    where
+    evalWhile :: Logical (Views a) -> Sem ()
+    evalWhile condition stmts = \state -> case condition.a state of
+                                              (Right bool, state2) -> if bool (
+                                                      case stmts.a state2 of
+                                                          (Right _, state3) ->  evalWhile condition stmts state3
+                                                          (Left err, state3) -> (Left err, state3)
+                                                  )
+                                                  (Right (), state2)
+                                              (Left err, state2) -> (Left err, state2)
+
+:: Then = Then
+:: Else = Else
 
 If :: Logical Then (Views a) Else (Views a) -> Views a
 If condition Then then Else else = {
@@ -260,8 +287,8 @@ If condition Then then Else else = {
                              , s = ["if ("] ++ condition.s ++ [") then {\n"] ++ indent then.s ++ ["\n} else {\n"] ++ indent else.s ++ ["\n}"]
                          }
 
-:: Then = Then
-:: Else = Else
+skip :: Views ()
+skip = show "skip" (pure ())
 
 //////////////////////////////////////////////////
 // Evaluation                                   //
@@ -284,6 +311,21 @@ stmt1 = "sum" =. integer 0 :.
             ("sum" =. (variable "sum") + (If (variable "v" <=. integer 9) Then (integer 0 + (variable "v")) Else (integer 0))) :.
         variable "sum"
 
+// From slides
+fac2 :: Int -> Element
+fac2 n =
+    "n" =. integer n :.
+    "r" =. integer 1 :.
+    If (integer 0 <. variable "n") Then (
+        while (integer 1 <. variable "n") Do (
+            "r" =. variable "r" * (integer 0 + variable "n") :.
+            "n" =. variable "n" - integer 1
+        )
+    ) Else (
+        skip
+    ) :.
+    "out" =. variable "r"
+
 eval :: (Views a) State -> Either String a
 eval va s = fst (va.a s)
 
@@ -300,8 +342,9 @@ print va = foldr (+++) "" va.s
 
 Start
     //# prog = expr1 :. expr2
-    # prog = stmt1
+    //# prog = stmt1
     //# prog = "a" =. integer 6
+    # prog = fac2 5
     = (eval prog initState, "asd...", print prog, "Test....", prog.s)
 
 
