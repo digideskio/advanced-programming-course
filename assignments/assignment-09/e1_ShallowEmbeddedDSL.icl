@@ -325,8 +325,47 @@ expr3 = not (integer 6 ==. integer 7 + integer 2)
 stmt1 :: Element
 stmt1 = "sum" =. integer 0 :.
         for "v" In (set [1,3,5,7,9,11,13]) Do
-            ("sum" =. (variable "sum") + (If (variable "v" <=. integer 9) Then (element` (variable "v")) Else (integer 0))) :.
+            ("sum" =. (variable "sum") + (If (variable "v" <=. integer 9) Then (
+                element` (variable "v")
+            ) Else (
+                integer 0
+            ))) :.
         variable "sum"
+        
+findFirstNPrimes :: Int -> Set
+findFirstNPrimes n =
+    "primes" =. set [] :.
+    "cur" =. integer 2 :.
+    // Loop until n primes are found
+    while (size (variable "primes") <. integer n) Do (
+        "n" =. integer 2 :.
+        "hasDivisor" =. logical False :.
+        // Try to find an n * multiplier such that n * multiplier = cur, which means
+        // cur is divisible by more than 1 and itself.
+        while (element` (variable "n") <. variable "cur") Do (
+            "multiplier" =. integer 1 :.
+            while (element` (variable "multiplier") <. variable "cur") Do (
+                If ((element` (variable "n") * variable "multiplier") ==. variable "cur") Then (
+                    "hasDivisor" =. logical True :.
+                    skip
+                ) Else (
+                    skip
+                ) :.
+                "multiplier" =. variable "multiplier" + integer 1
+            ) :.
+            "n" =. variable "n" + integer 1
+        ) :.
+        If (variable "hasDivisor") Then (
+            // A divisor has been found; not prime
+            skip
+        ) Else (
+            // No divisor has been found; prime
+            "primes" =. (set` (variable "primes") +. element` (variable "cur")) :.
+            skip
+        ) :.
+        "cur" =. variable "cur" + integer 1
+    ) :.
+    variable "primes"
 
 // From slides
 fac2 :: Int -> Element
@@ -360,8 +399,9 @@ print va = foldr (+++) "" va.s
 Start
     //# prog = expr1 :. expr2
     //# prog = stmt1
+    # prog = findFirstNPrimes 15
     //# prog = "a" =. integer 6
-    # prog = fac2 5
+    //# prog = fac2 5
     = (eval prog initState, "\n------\n" +++ print prog +++ "\n")
 
 
