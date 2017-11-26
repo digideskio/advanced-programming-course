@@ -10,6 +10,7 @@ module e1_ShallowEmbeddedDSL
  * Skeleton for Advanced Programming, week 9, 2017
  */
 
+from StdEnv import undef
 import Data.Functor, Control.Applicative, Control.Monad
 import Data.Tuple, StdClass, StdList, StdMaybe, StdString
 import StdGeneric, StdBool, StdTuple
@@ -231,16 +232,30 @@ not l = ((==) False) <$> show "!" l
 //////////////////////////////////////////////////
 // Statements                                   //
 //////////////////////////////////////////////////
-undef = undef 
+
 (:.) infixr 1 :: (Views a) (Views b) -> Views b
 (:.) a b = a >>| show ";\n" b
 
 for :: Ident In Set Do (Views a) -> Views ()
-for ident In set Do stmts = show ("for " +++ ident +++ " in ") set >>= \set` -> show " do" (
+for ident In set Do stmts = {
+                                a = \state -> case set.a state of
+                                        (Right set`, state2) -> evalFor ident set` stmts state2
+                                , s = ["for ", ident, " in "] ++ set.s ++ [" do {\n"] ++ stmts.s ++ ["\n}"]
+                            }
+    where
+    evalFor :: Ident [Int] (Views a) -> Sem ()
+    evalFor ident [] stmts = \state -> (Right (), state)
+    evalFor ident [s:ss] stmts = \state -> let (_, state2) = store ident s state in
+                                           let (_, state3) = stmts.a state2 in
+                                           evalFor ident ss stmts state3
+
+/*
+    set >>= \set` -> (
                                   case set` of
                                       [] = pure ()
                                       [s:ss] = ((ident =. pure s) :. stmts) :. for ident In (pure ss) Do stmts
                               )
+*/
 
 :: In = In
 :: Do = Do
