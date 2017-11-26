@@ -262,7 +262,7 @@ for ident In set Do stmts = {
 
 while :: Logical Do (Views a) -> Views ()
 while condition Do stmts = {   a = \state -> evalWhile condition stmts state
-                               , s = ["while "] ++ condition.s ++ [" do {\n"] ++ indent stmts.s ++ ["\n}"]
+                               , s = ["while ("] ++ condition.s ++ [") do {\n"] ++ indent stmts.s ++ ["\n}"]
                            }
     where
     evalWhile :: Logical (Views a) -> Sem ()
