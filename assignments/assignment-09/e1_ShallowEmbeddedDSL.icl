@@ -294,6 +294,23 @@ skip = show "skip" (pure ())
 // Evaluation                                   //
 //////////////////////////////////////////////////
 
+/* Hacky type hints
+ * Necessary for, e.g.:
+ *     variable "r" * variable "n"
+ * as * is a class, and we use dynamics, so Clean cannot infer that
+ * variable "r" should be an Element. Does Clean implement nicer way
+ * to give an inline type hint? For example:
+ *     (variable "r") :: Element  * variable "n"
+ */ 
+element` :: Element -> Element
+element` e = e
+
+set` :: Set -> Set
+set` s = s
+
+logical` :: Logical -> Logical
+logical` l = l
+
 expr1 :: Element
 expr1 = "v" =. integer 6 * integer 7
 
@@ -308,7 +325,7 @@ expr3 = not (integer 6 ==. integer 7 + integer 2)
 stmt1 :: Element
 stmt1 = "sum" =. integer 0 :.
         for "v" In (set [1,3,5,7,9,11,13]) Do
-            ("sum" =. (variable "sum") + (If (variable "v" <=. integer 9) Then (integer 0 + (variable "v")) Else (integer 0))) :.
+            ("sum" =. (variable "sum") + (If (variable "v" <=. integer 9) Then (element` (variable "v")) Else (integer 0))) :.
         variable "sum"
 
 // From slides
@@ -318,7 +335,7 @@ fac2 n =
     "r" =. integer 1 :.
     If (integer 0 <. variable "n") Then (
         while (integer 1 <. variable "n") Do (
-            "r" =. variable "r" * (integer 0 + variable "n") :.
+            "r" =. element` (variable "r") * variable "n" :.
             "n" =. variable "n" - integer 1
         )
     ) Else (
