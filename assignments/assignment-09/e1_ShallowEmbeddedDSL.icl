@@ -249,19 +249,17 @@ for ident In set Do stmts = {
                                            let (_, state3) = stmts.a state2 in
                                            evalFor ident ss stmts state3
 
-/*
-    set >>= \set` -> (
-                                  case set` of
-                                      [] = pure ()
-                                      [s:ss] = ((ident =. pure s) :. stmts) :. for ident In (pure ss) Do stmts
-                              )
-*/
-
 :: In = In
 :: Do = Do
 
-if` :: Logical Then (Views a) Else (Views a) -> Views a
-if` l Then stmts1 Else stmts2 = l >>= \bool -> if bool stmts1 stmts2
+If :: Logical Then (Views a) Else (Views a) -> Views a
+If condition Then then Else else = {
+                             a = (\state -> case condition.a state of
+                                     (Right bool, state2) = if bool then.a else.a state2
+                                     (Left err, state2) = (Left err, state2)
+                                 )
+                             , s = ["if ("] ++ condition.s ++ [") then {\n"] ++ then.s ++ ["\n} else {\n"] ++ else.s ++ ["\n}"]
+                         }
 
 :: Then = Then
 :: Else = Else
@@ -284,7 +282,7 @@ expr3 = not (integer 6 ==. integer 7 + integer 2)
 stmt1 :: Element
 stmt1 = "sum" =. integer 0 :.
         for "v" In (set [1,3,5,7,9,11,13]) Do
-            ("sum" =. (variable "sum") + integer 0 + (variable "v")) :.
+            ("sum" =. (variable "sum") + (If (variable "v" <=. integer 9) Then (integer 0 + (variable "v")) Else (integer 0))) :.
         variable "sum"
 
 eval :: (Views a) State -> Either String a
