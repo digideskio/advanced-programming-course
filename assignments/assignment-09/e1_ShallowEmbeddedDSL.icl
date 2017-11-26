@@ -302,8 +302,8 @@ skip = show "skip" (pure ())
  * to give an inline type hint? For example:
  *     (variable "r") :: Element  * variable "n"
  */ 
-element` :: Element -> Element
-element` e = e
+integer` :: Element -> Element
+integer` e = e
 
 set` :: Set -> Set
 set` s = s
@@ -326,7 +326,7 @@ stmt1 :: Element
 stmt1 = "sum" =. integer 0 :.
         for "v" In (set [1,3,5,7,9,11,13]) Do
             ("sum" =. (variable "sum") + (If (variable "v" <=. integer 9) Then (
-                element` (variable "v")
+                integer` (variable "v")
             ) Else (
                 integer 0
             ))) :.
@@ -342,10 +342,10 @@ findFirstNPrimes n =
         "hasDivisor" =. logical False :.
         // Try to find an n * multiplier such that n * multiplier = cur, which means
         // cur is divisible by more than 1 and itself.
-        while (element` (variable "n") <. variable "cur") Do (
+        while (integer` (variable "n") <. variable "cur") Do (
             "multiplier" =. integer 1 :.
-            while (element` (variable "multiplier") <. variable "cur") Do (
-                If ((element` (variable "n") * variable "multiplier") ==. variable "cur") Then (
+            while (integer` (variable "multiplier") <. variable "cur") Do (
+                If ((integer` (variable "n") * variable "multiplier") ==. variable "cur") Then (
                     "hasDivisor" =. logical True :.
                     skip
                 ) Else (
@@ -360,7 +360,7 @@ findFirstNPrimes n =
             skip
         ) Else (
             // No divisor has been found; prime
-            "primes" =. (set` (variable "primes") +. element` (variable "cur")) :.
+            "primes" =. (set` (variable "primes") +. integer` (variable "cur")) :.
             skip
         ) :.
         "cur" =. variable "cur" + integer 1
@@ -374,7 +374,7 @@ fac2 n =
     "r" =. integer 1 :.
     If (integer 0 <. variable "n") Then (
         while (integer 1 <. variable "n") Do (
-            "r" =. element` (variable "r") * variable "n" :.
+            "r" =. integer` (variable "r") * variable "n" :.
             "n" =. variable "n" - integer 1
         )
     ) Else (
