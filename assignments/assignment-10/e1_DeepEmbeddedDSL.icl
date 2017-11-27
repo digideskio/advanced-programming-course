@@ -33,21 +33,44 @@ instance - Set where
 
 :: Expression a
    = Lit a
-   | New   (BM a Set) [Int]
-   | Size  (BM a Int) (Expression Set)
+   | New        (BM a Set) [Int]
+   | Size       (BM a Int) (Expression Set)
    | (+.) infixl 6 (Expression a) (Expression a) & + a
    | (-.) infixl 6 (Expression a) (Expression a) & - a
    | (*.) infixl 7 (Expression a) (Expression a) & * a
-   | TRUE  (BM a Bool)
-   | FALSE (BM a Bool)
-   | Eq    (BM a Bool) (Expression a) (Expression a) & == a
-   | Lteq  (BM a Bool) (Expression a) (Expression a) & Ord a
-   | Lt    (BM a Bool) (Expression a) (Expression a) & Ord a
-   | Gteq  (BM a Bool) (Expression a) (Expression a) & Ord a
-   | Gt    (BM a Bool) (Expression a) (Expression a) & Ord a
-   | Not   (BM a Bool) (Expression Bool)
-   | Or    (BM a Bool) (Expression Bool) (Expression Bool)
-   | And   (BM a Bool) (Expression Bool) (Expression Bool)
+   | TRUE       (BM a Bool)
+   | FALSE      (BM a Bool)
+   | E.b: Eq    (BM a Bool) (Expression b) (Expression b) & == b
+   | E.b: Lteq  (BM a Bool) (Expression b) (Expression b) & Ord b
+   | E.b: Lt    (BM a Bool) (Expression b) (Expression b) & Ord b
+   | E.b: Gteq  (BM a Bool) (Expression b) (Expression b) & Ord b
+   | E.b: Gt    (BM a Bool) (Expression b) (Expression b) & Ord b
+   | Not        (BM a Bool) (Expression Bool)
+   | Or         (BM a Bool) (Expression Bool) (Expression Bool)
+   | And        (BM a Bool) (Expression Bool) (Expression Bool)
+
+
+//////////////////////////////////////////////////
+// Syntactic sugar                              //
+//////////////////////////////////////////////////
+
+true = TRUE bm
+false = FALSE bm
+
+(==.) infix 4 :: (Expression a) (Expression a) -> Expression Bool | ==, toString a
+(==.) expr1 expr2 = Eq bm expr1 expr2
+
+(<=.) infix 4 :: (Expression a) (Expression a) -> Expression Bool | Ord, toString a
+(<=.) expr1 expr2 = Lteq bm expr1 expr2
+
+(<.) infix 4 :: (Expression a) (Expression a) -> Expression Bool | Ord, toString a
+(<.) expr1 expr2 = Lt bm expr1 expr2
+
+(>=.) infix 4 :: (Expression a) (Expression a) -> Expression Bool | Ord, toString a
+(>=.) expr1 expr2 = Gteq bm expr1 expr2
+
+(>.) infix 4 :: (Expression a) (Expression a) -> Expression Bool | Ord, toString a
+(>.) expr1 expr2 = Gt bm expr1 expr2
 
 //////////////////////////////////////////////////
 // Semantics                                    //
@@ -71,5 +94,7 @@ eval (Not {f} boolExpr) = f (not (eval boolExpr))
 eval (Or {f} boolExpr1 boolExpr2) = f (eval boolExpr1 || eval boolExpr2)
 eval (And {f} boolExpr1 boolExpr2) = f (eval boolExpr1 && eval boolExpr2)
 
+show :: (Expression a) -> String
+show _ = undef
 
 Start = eval (Size bm (New bm [1,5,7,7]))
