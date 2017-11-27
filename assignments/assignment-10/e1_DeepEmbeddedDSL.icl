@@ -9,7 +9,7 @@ module e1_DeepEmbeddedDSL
  * Skeleton for Advanced Programming, week 8, 2017
  */
 
-import StdEnv, StdMaybe, Data.Either, Control.Monad
+import StdEnv, StdMaybe, Data.Either, Data.Functor, Control.Applicative, Control.Monad
 import qualified Data.Map as Map
 import qualified Data.Set as Set
 
@@ -117,25 +117,82 @@ read name = S \s0 -> case 'Map'.get name s0 of
               typecheck _ (e :: a^) = Right e
               typecheck name e      = Left ("Used variable is of wrong type: " +++ name)
 
-eval :: (Expression a) -> a
-eval (Lit l) = l
-eval (New {f} l) = f ('Set'.fromList l)
-eval (Size {f} setExpr) = f ('Set'.size (eval setExpr))
-eval (+. expr1 expr2) = eval expr1 + eval expr2
-eval (-. expr1 expr2) = eval expr1 - eval expr2
-eval (*. expr1 expr2) = eval expr1 * eval expr2
-eval (TRUE {f}) = f True
-eval (FALSE {f}) = f False
-eval (Eq {f} expr1 expr2) = f (eval expr1 == eval expr2)
-eval (Lteq {f} expr1 expr2) = f (eval expr1 <= eval expr2)
-eval (Lt {f} expr1 expr2) = f (eval expr1 < eval expr2)
-eval (Gteq {f} expr1 expr2) = f (eval expr1 >= eval expr2)
-eval (Gt {f} expr1 expr2) = f (eval expr1 > eval expr2)
-eval (Not {f} boolExpr) = f (not (eval boolExpr))
-eval (Or {f} boolExpr1 boolExpr2) = f (eval boolExpr1 || eval boolExpr2)
-eval (And {f} boolExpr1 boolExpr2) = f (eval boolExpr1 && eval boolExpr2)
+eval` :: (Expression a) -> a
+eval` (Lit l) = l
+eval` (New {f} l) = f ('Set'.fromList l)
+eval` (Size {f} setExpr) = f ('Set'.size (eval` setExpr))
+eval` (+. expr1 expr2) = eval` expr1 + eval` expr2
+eval` (-. expr1 expr2) = eval` expr1 - eval` expr2
+eval` (*. expr1 expr2) = eval` expr1 * eval` expr2
+eval` (TRUE {f}) = f True
+eval` (FALSE {f}) = f False
+eval` (Eq {f} expr1 expr2) = f (eval` expr1 == eval` expr2)
+eval` (Lteq {f} expr1 expr2) = f (eval` expr1 <= eval` expr2)
+eval` (Lt {f} expr1 expr2) = f (eval` expr1 < eval` expr2)
+eval` (Gteq {f} expr1 expr2) = f (eval` expr1 >= eval` expr2)
+eval` (Gt {f} expr1 expr2) = f (eval` expr1 > eval` expr2)
+eval` (Not {f} boolExpr) = f (not (eval` boolExpr))
+eval` (Or {f} boolExpr1 boolExpr2) = f (eval` boolExpr1 || eval` boolExpr2)
+eval` (And {f} boolExpr1 boolExpr2) = f (eval` boolExpr1 && eval` boolExpr2)
+
+eval :: (Expression a) -> Sem a | TC a
+eval (Lit l) = pure l
+eval (New {f} l) = pure (f ('Set'.fromList l))
+eval (Size {f} setExpr) = eval setExpr >>= \set -> (pure o f) ('Set'.size set)
+eval (+. expr1 expr2) =
+    undef
+    //eval expr1
+    //>>= \expr1 -> eval expr2
+    //>>= \expr2 -> pure (expr1 + expr2)
+eval (-. expr1 expr2) =
+    undef
+    //eval expr1
+    //>>= \expr1 -> eval expr2
+    //>>= \expr2 -> pure (expr1 - expr2)
+eval (*. expr1 expr2) =
+    undef
+    //eval expr1
+    //>>= \expr1 -> eval expr2
+    //>>= \expr2 -> pure (expr1 * expr2)
+eval (=. identifier expr) = eval expr >>= store identifier
+eval (TRUE {f}) = (pure o f) True
+eval (FALSE {f}) = (pure o f) False
+eval (Eq {f} expr1 expr2) =
+    undef
+    //eval expr1
+    //>>= \expr1` -> eval expr2
+    //>>= \expr2` -> (pure o f) (expr1` == expr2`)
+eval (Lteq {f} expr1 expr2) =
+    undef
+    //eval expr1
+    //>>= \expr1` -> eval expr2
+    //>>= \expr2 -> (pure o f) (expr1 <= expr2)
+eval (Lt {f} expr1 expr2) =
+    undef
+    //eval expr1
+    //>>= \expr1` -> eval expr2
+    //>>= \expr2 -> (pure o f) (expr1 < expr2)
+eval (Gteq {f} expr1 expr2) = 
+    undef
+    //eval expr1
+    //>>= \expr1` -> eval expr2
+    //>>= \expr2 -> (pure o f) (expr1 >= expr2)
+eval (Gt {f} expr1 expr2) =
+    undef
+    //eval expr1
+    //>>= \expr1` -> eval expr2
+    //>>= \expr2 -> (pure o f) (expr1 > expr2)
+eval (Not {f} boolExpr) = eval boolExpr >>= pure o f o not
+eval (Or {f} boolExpr1 boolExpr2) =
+    eval boolExpr1
+    >>= \bool1 -> eval boolExpr2
+    >>= \bool2 -> (pure o f) (bool1 || bool2)
+eval (And {f} boolExpr1 boolExpr2) =
+    eval boolExpr1
+    >>= \bool1 -> eval boolExpr2
+    >>= \bool2 -> (pure o f) (bool1 && bool2)
 
 show :: (Expression a) -> String
 show _ = undef
 
-Start = eval (Size bm (New bm [1,5,7,7]))
+Start = eval` (Size bm (New bm [1,5,7,7]) +. Lit 39)
