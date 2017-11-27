@@ -9,8 +9,8 @@ module e1_DeepEmbeddedDSL
  * Skeleton for Advanced Programming, week 8, 2017
  */
 
-import StdEnv
-import qualified Data.List as List
+import StdEnv, StdMaybe, Data.Either, Control.Monad
+import qualified Data.Map as Map
 import qualified Data.Set as Set
 
 //////////////////////////////////////////////////
@@ -31,6 +31,8 @@ instance + Set where
 instance - Set where
     (-) s1 s2 = 'Set'.difference s1 s2
 
+:: Identifier :== String
+
 :: Expression a
    = Lit a
    | New        (BM a Set) [Int]
@@ -38,6 +40,7 @@ instance - Set where
    | (+.) infixl 6 (Expression a) (Expression a) & + a
    | (-.) infixl 6 (Expression a) (Expression a) & - a
    | (*.) infixl 7 (Expression a) (Expression a) & * a
+   | (=.) infixl 2 Identifier (Expression a)
    | TRUE       (BM a Bool)
    | FALSE      (BM a Bool)
    | E.b: Eq    (BM a Bool) (Expression b) (Expression b) & == b
@@ -48,7 +51,6 @@ instance - Set where
    | Not        (BM a Bool) (Expression Bool)
    | Or         (BM a Bool) (Expression Bool) (Expression Bool)
    | And        (BM a Bool) (Expression Bool) (Expression Bool)
-
 
 //////////////////////////////////////////////////
 // Syntactic sugar                              //
@@ -75,6 +77,45 @@ false = FALSE bm
 //////////////////////////////////////////////////
 // Semantics                                    //
 //////////////////////////////////////////////////
+
+:: State :== 'Map'.Map Identifier Dynamic
+:: Views a = {a :: Sem a, s :: [String]}
+:: Sem a = S (State -> (Either String a, State))
+
+initialState :: State
+initialState = 'Map'.newMap
+
+unS :: (Sem a) -> State -> (Either String a, State)
+unS (S f) = f
+
+instance Functor Sem where
+    fmap f prog = S \s0 -> case unS prog s0 of
+        (Right ret, s1)  -> (Right (f ret), s1)
+        (Left err, s1)   -> (Left err, s1)
+
+instance Applicative Sem where
+    pure x = S \s0 -> (Right x, s0)
+    (<*>) f x = S \s0 -> case unS f s0 of
+        (Right ret1, s1) -> case unS x s1 of
+            (Right ret2, s2) -> (Right (ret1 ret2), s2)
+            (Left err, s2)   -> (Left err, s2)
+        (Left err, s1)   -> (Left err, s1)
+
+instance Monad Sem where
+    bind x f = S \s0 -> case unS x s0 of
+        (Right ret1, s1) -> unS (f ret1) s1
+        (Left err, s1)   -> (Left err, s1)
+
+store :: Identifier a -> Sem a | TC a
+store name val = S \s0 -> (Right val, 'Map'.put name (dynamic val) s0)
+
+read :: Identifier -> Sem a | TC a
+read name = S \s0 -> case 'Map'.get name s0 of
+    Nothing -> (Left ("The following variable could not be found: " +++ name), s0)
+    Just val -> (typecheck name val, s0)
+        where typecheck :: Identifier Dynamic -> (Either String a) | TC a
+              typecheck _ (e :: a^) = Right e
+              typecheck name e      = Left ("Used variable is of wrong type: " +++ name)
 
 eval :: (Expression a) -> a
 eval (Lit l) = l
