@@ -54,12 +54,13 @@ instance * Set where
    // Expression-based language (like Rust <3)
    // Though one issue is that variables can get void values now, e.g. '"a" =. Skip',
    // but this is also possible through e.g. '"a" =. Lit ()'
-   | (:.) infixr 1 (Expression a) (Expression a)
+   | E.b: (:.) infixr 1 (Expression b) (Expression a) & TC b
    | If         (Expression Bool) Then (Expression a) Else (Expression a)
    // () because a for loop might not return a value (e.g. its set is empty), and
    // though bm a (Maybe a) could also work, there is no wider support for this in
    // the language we are creating.
    | E.b: For   (BM a ()) Identifier In (Expression Set) Do (Expression b) & TC b
+   | E.b: While (BM a ()) (Expression Bool) Do (Expression b) & TC b
    | Skip       (BM a ())
 
 :: Then = Then
@@ -77,6 +78,8 @@ skip = Skip bm
 
 set :: [Int] -> Expression Set
 set l = Lit ('Set'.fromList l)
+
+size = Size bm
 
 (==.) infix 4 :: (Expression a) (Expression a) -> Expression Bool | TC, ==, toString a
 (==.) expr1 expr2 = Eq bm expr1 expr2
@@ -185,9 +188,37 @@ eval (For {f} identifier In exprSet Do exprBody) = ev f identifier exprSet exprB
           ev` :: (() -> a) Identifier [b] (Expression c) -> (Sem a) | TC a & TC b & TC c
           ev` f identifier [] _ = (pure o f) ()
           ev` f identifier [s:ss] exprBody = store identifier s >>| eval exprBody >>| ev` f  identifier ss exprBody
+eval (While {f} exprCond Do exprBody) = ev f exprCond exprBody
+    where ev :: (() -> a) (Expression Bool) (Expression b) -> (Sem a) | TC b
+          ev f exprCond exprBody =
+              eval exprCond >>=
+              \cond -> if cond (eval exprBody >>| ev f exprCond exprBody) ((pure o f) ())
 eval (Skip {f}) = (pure o f) ()
 
 show :: (Expression a) -> String
 show _ = undef
 
-Start = unS (eval (Size bm (set [1,5,7,7]) +. Lit 39)) initialState
+/* Hacky type hints
+ * Necessary for, e.g.:
+ *     variable "r" * variable "n"
+ * as * is a class, and we use dynamics, so Clean cannot infer that
+ * variable "r" should be an Element. Does Clean implement nicer way
+ * to give an inline type hint? For example:
+ *     (variable "r") :: Element  * variable "n"
+ */ 
+integer` :: (Expression Int) -> Expression Int
+integer` e = e
+
+set` :: (Expression ('Set'.Set a)) -> (Expression ('Set'.Set a))
+set` s = s
+
+logical` :: (Expression Bool) -> Expression Bool
+logical` l = l
+
+findFirstNPrimes :: Int -> Expression ('Set'.Set Int)
+findFirstNPrimes n = undef
+
+Start
+    #prog1 = Size bm (set [1,5,7,7]) +. Lit 39
+    #prog2 = findFirstNPrimes 15
+    = (unS (eval prog2)) initialState
