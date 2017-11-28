@@ -44,8 +44,6 @@ instance * Set where
    | (-.) infixl 6 (Expression a) (Expression a) & - a
    | (*.) infixl 7 (Expression a) (Expression a) & * a
    | (=.) infixl 2 Identifier (Expression a)
-   | TRUE       (BM a Bool)
-   | FALSE      (BM a Bool)
    | E.b: Eq    (BM a Bool) (Expression b) (Expression b) & TC, == b
    | E.b: Lteq  (BM a Bool) (Expression b) (Expression b) & TC, Ord b
    | E.b: Lt    (BM a Bool) (Expression b) (Expression b) & TC, Ord b
@@ -59,8 +57,8 @@ instance * Set where
 // Syntactic sugar                              //
 //////////////////////////////////////////////////
 
-true = TRUE bm
-false = FALSE bm
+true = Lit True
+false = Lit False
 
 (==.) infix 4 :: (Expression a) (Expression a) -> Expression Bool | TC, ==, toString a
 (==.) expr1 expr2 = Eq bm expr1 expr2
@@ -138,8 +136,6 @@ eval (*. expr1 expr2) = ev expr1 expr2
     where ev :: (Expression a) (Expression a) -> Sem a | TC,* a
           ev e1 e2 = eval e1 >>= \r1 -> eval e2 >>= \r2 -> pure (r1 * r2)
 eval (=. identifier expr) = eval expr >>= store identifier
-eval (TRUE {f}) = (pure o f) True
-eval (FALSE {f}) = (pure o f) False
 eval (Eq {f} expr1 expr2) = ev f expr1 expr2
     where ev :: (Bool -> a) (Expression b) (Expression b) -> Sem a | TC a & TC,== b
           ev f e1 e2 = eval e1 >>= \r1 -> eval e2 >>= \r2 -> (pure o f) (r1 == r2)
