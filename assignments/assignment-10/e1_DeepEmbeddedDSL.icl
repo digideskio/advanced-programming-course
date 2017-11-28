@@ -12,6 +12,7 @@ module e1_DeepEmbeddedDSL
 import StdEnv, StdMaybe, Data.Either, Data.Functor, Control.Applicative, Control.Monad
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+from Text import class Text(replaceSubString), instance Text String
 
 //////////////////////////////////////////////////
 // Language data structures                     //
@@ -25,6 +26,12 @@ bm = {f = id, t = id}
 
 :: Identifier :== String
 :: Set :== 'Set'.Set Int
+
+instance toString ('Set'.Set a) | toString a where
+    toString s = "{" +++ toString` ('Set'.toList s) +++ "}"
+        where toString` [] = ""
+              toString` [a] = toString a
+              toString` [a:as] = toString a +++ ", " +++ toString` as
 
 instance + Set where
     (+) s1 s2 = 'Set'.union s1 s2
@@ -43,11 +50,11 @@ instance * Set where
    | (-.) infixl 6 (Expression a) (Expression a) & - a
    | (*.) infixl 7 (Expression a) (Expression a) & * a
    | (=.) infixl 2 Identifier (Expression a)
-   | E.b: Eq    (BM a Bool) (Expression b) (Expression b) & TC, == b
-   | E.b: Lteq  (BM a Bool) (Expression b) (Expression b) & TC, Ord b
-   | E.b: Lt    (BM a Bool) (Expression b) (Expression b) & TC, Ord b
-   | E.b: Gteq  (BM a Bool) (Expression b) (Expression b) & TC, Ord b
-   | E.b: Gt    (BM a Bool) (Expression b) (Expression b) & TC, Ord b
+   | E.b: Eq    (BM a Bool) (Expression b) (Expression b) & TC, toString, == b
+   | E.b: Lteq  (BM a Bool) (Expression b) (Expression b) & TC, toString, Ord b
+   | E.b: Lt    (BM a Bool) (Expression b) (Expression b) & TC, toString, Ord b
+   | E.b: Gteq  (BM a Bool) (Expression b) (Expression b) & TC, toString, Ord b
+   | E.b: Gt    (BM a Bool) (Expression b) (Expression b) & TC, toString, Ord b
    | Not        (BM a Bool) (Expression Bool)
    | Or         (BM a Bool) (Expression Bool) (Expression Bool)
    | And        (BM a Bool) (Expression Bool) (Expression Bool)
@@ -59,7 +66,7 @@ instance * Set where
    // () because a for loop might not return a value (e.g. its set is empty), and
    // though bm a (Maybe a) could also work, there is no wider support for this in
    // the language we are creating.
-   | E.b: For   (BM a ()) Identifier In (Expression Set) Do (Expression b) & TC b
+   | E.b: For   (BM a ()) Identifier In (Expression Set) Do (Expression b) & TC, toString b
    | Skip       (BM a ())
 
 :: Then = Then
@@ -186,7 +193,36 @@ eval (For {f} identifier In exprSet Do exprBody) = ev f identifier exprSet exprB
           ev` f identifier [] _ = (pure o f) ()
           ev` f identifier [s:ss] exprBody = store identifier s >>| eval exprBody >>| ev` f  identifier ss exprBody
 
-show :: (Expression a) -> String
-show _ = undef
+show :: (Expression a) -> String | toString a
+show expr = show` False expr
+    where show` :: Bool (Expression a) -> String | toString a
+          // The flag pp indicates whether parentheses should be printed around the expression
+          show`  _ (Lit l) = toString l
+          show`  _ (Size _ setExpr) = "|" +++ show setExpr +++ "|"
+          show`  _ (Var name) = name
+          show`  _ (Skip _) = "skip"
+          show`  False expr = show`` expr
+          show`  True  expr = "(" +++ show`` expr +++ ")"
+          show`` :: (Expression a) -> String | toString a
+          show`` (+. expr1 expr2) = showBin " + " expr1 expr2
+          show`` (-. expr1 expr2) = showBin " - " expr1 expr2
+          show`` (*. expr1 expr2) = showBin " * " expr1 expr2
+          show`` (=. name expr) = name +++ " = " +++ show expr
+          show`` (Eq _ expr1 expr2) = showBin " == " expr1 expr2
+          show`` (Lteq _ expr1 expr2) = showBin " <= " expr1 expr2
+          show`` (Lt _ expr1 expr2) = showBin " < " expr1 expr2
+          show`` (Gteq _ expr1 expr2) = showBin " >= " expr1 expr2
+          show`` (Gt _ expr1 expr2) = showBin " > " expr1 expr2
+          show`` (Not _ expr) = show` True expr
+          show`` (Or _ expr1 expr2) = showBin " || " expr1 expr2
+          show`` (And _ expr1 expr2) = showBin " && " expr1 expr2
+          show`` (:. expr1 expr2) = show expr1 +++ ";\n" +++ show expr2
+          show`` (If condition Then exprThen Else exprElse) = "if(" +++ show condition +++ ") then {\n" +++ indent (show exprThen) +++ "\n} else {\n" +++ indent (show exprElse) +++ "\n}"
+          show`` (For _ name In exprSet Do exprBody) = "for " +++ name +++ " in " +++ show exprSet +++ " do {\n" +++ indent (show exprBody) +++ "\n}"
+          
+          showBin :: String (Expression b) (Expression b) -> String | toString b
+          showBin op expr1 expr2 = show` True expr1 +++ op +++ show` True expr2
+          indent :: String -> String
+          indent str = replaceSubString "\n" "\n    " str
 
 Start = unS (eval (Size bm (set [1,5,7,7]) +. Lit 39)) initialState
