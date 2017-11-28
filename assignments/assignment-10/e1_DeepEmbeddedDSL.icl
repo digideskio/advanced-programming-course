@@ -39,20 +39,29 @@ instance toString () where
 instance + Set where
     (+) s1 s2 = 'Set'.union s1 s2
 
-class SetOperators. a b where
-    setPlus  :: ('Set'.Set a) b -> 'Set'.Set a
-    setMinus :: ('Set'.Set a) b -> 'Set'.Set a
-    setTimes :: ('Set'.Set a) b -> 'Set'.Set a
+class SetPlus a b where
+    setPlus  :: a b -> Set
+class SetMinus a b where
+    setMinus :: a b -> Set
+class SetTimes a b where
+    setTimes :: a b -> Set
 
-instance SetOperators a ('Set'.Set a) | <, == a where
+instance SetPlus Set Set where
     setPlus  s1 s2 = 'Set'.union s1 s2
+instance SetMinus Set Set where
     setMinus s1 s2 = 'Set'.difference s1 s2
+instance SetTimes Set Set where
     setTimes s1 s2 = 'Set'.intersection s1 s2
 
-instance SetOperators Int Int where
-    setPlus  s i = undef
-    setMinus s i = undef
-    setTimes s i = undef
+instance SetPlus Set Int where
+    setPlus  s i = 'Set'.insert i s
+instance SetMinus Set Int where
+    setMinus s i = 'Set'.delete i s
+
+instance SetPlus Int Set where
+    setPlus  i s = 'Set'.insert i s
+instance SetTimes Int Set where
+    setTimes i s = 'Set'.mapSet (\v -> i*v) s
 
 :: Expression a
    = Lit a
@@ -61,9 +70,9 @@ instance SetOperators Int Int where
    | (+.) infixl 6 (Expression a) (Expression a) & + a
    | (-.) infixl 6 (Expression a) (Expression a) & - a
    | (*.) infixl 7 (Expression a) (Expression a) & * a
-   | E.b c: SetPlus  (BM a ('Set'.Set b)) (Expression ('Set'.Set b)) (Expression c) & SetOperators b c
-   | E.b c: SetMinus (BM a ('Set'.Set b)) (Expression ('Set'.Set b)) (Expression c) & SetOperators b c
-   | E.b c: SetTimes (BM a ('Set'.Set b)) (Expression ('Set'.Set b)) (Expression c) & SetOperators b c
+   | E.b c: SetPlus  (BM a Set) (Expression b) (Expression c) & TC, toString b & TC, toString c & SetPlus b c
+   | E.b c: SetMinus (BM a Set) (Expression b) (Expression c) & TC, toString b & TC, toString c & SetMinus b c
+   | E.b c: SetTimes (BM a Set) (Expression b) (Expression c) & TC, toString b & TC, toString c & SetTimes b c
    | (=.) infixl 2 Identifier (Expression a)
    | E.b: Eq         (BM a Bool) (Expression b) (Expression b) & TC, toString, == b
    | E.b: Lteq       (BM a Bool) (Expression b) (Expression b) & TC, toString, Ord b
@@ -103,13 +112,13 @@ set l = Lit ('Set'.fromList l)
 
 size = Size bm
 
-(++.) infixl 6 :: (Expression ('Set'.Set a)) (Expression b) -> Expression ('Set'.Set a) | SetOperators a b
+(++.) infixl 6 :: (Expression a) (Expression b) -> Expression Set | TC, toString a & TC, toString b & SetPlus a b
 (++.) expr1 expr2 = SetPlus bm expr1 expr2
 
-(--.) infixl 6 :: (Expression ('Set'.Set a)) (Expression b) -> Expression ('Set'.Set a) | SetOperators a b
+(--.) infixl 6 :: (Expression a) (Expression b) -> Expression Set | TC, toString a & TC, toString b & SetMinus a b
 (--.) expr1 expr2 = SetMinus bm expr1 expr2
 
-(**.) infixl 6 :: (Expression ('Set'.Set a)) (Expression b) -> Expression ('Set'.Set a) | SetOperators a b
+(**.) infixl 6 :: (Expression a) (Expression b) -> Expression Set | TC, toString a & TC, toString b & SetTimes a b
 (**.) expr1 expr2 = SetTimes bm expr1 expr2
 
 (==.) infix 4 :: (Expression a) (Expression a) -> Expression Bool | TC, ==, toString a
@@ -189,6 +198,15 @@ eval (-. expr1 expr2) = ev expr1 expr2
 eval (*. expr1 expr2) = ev expr1 expr2
     where ev :: (Expression a) (Expression a) -> Sem a | TC,* a
           ev e1 e2 = eval e1 >>= \r1 -> eval e2 >>= \r2 -> pure (r1 * r2)
+eval (SetPlus {f} expr1 expr2) = ev f expr1 expr2
+    where ev :: (Set -> a) (Expression b) (Expression c) -> Sem a | TC a & TC b & TC c & SetPlus b c
+          ev f e1 e2 = eval e1 >>= \r1 -> eval e2 >>= \r2 -> (pure o f) (setPlus r1 r2)
+eval (SetMinus {f} expr1 expr2) = ev f expr1 expr2
+    where ev :: (Set -> a) (Expression b) (Expression c) -> Sem a | TC a & TC b & TC c & SetMinus b c
+          ev f e1 e2 = eval e1 >>= \r1 -> eval e2 >>= \r2 -> (pure o f) (setMinus r1 r2)
+eval (SetTimes {f} expr1 expr2) = ev f expr1 expr2
+    where ev :: (Set -> a) (Expression b) (Expression c) -> Sem a | TC a & TC b & TC c & SetTimes b c
+          ev f e1 e2 = eval e1 >>= \r1 -> eval e2 >>= \r2 -> (pure o f) (setTimes r1 r2)
 eval (=. identifier expr) = eval expr >>= store identifier
 eval (Eq {f} expr1 expr2) = ev f expr1 expr2
     where ev :: (Bool -> a) (Expression b) (Expression b) -> Sem a | TC a & TC,== b
@@ -243,14 +261,17 @@ show expr = show` False expr
           show`` (+. expr1 expr2) = showBin " + " expr1 expr2
           show`` (-. expr1 expr2) = showBin " - " expr1 expr2
           show`` (*. expr1 expr2) = showBin " * " expr1 expr2
+          show`` (SetPlus  _ expr1 expr2) = show` True expr1 +++ " ++ " +++ show` True expr2
+          show`` (SetMinus _ expr1 expr2) = show` True expr1 +++ " -- " +++ show` True expr2
+          show`` (SetTimes _ expr1 expr2) = show` True expr1 +++ " ** " +++ show` True expr2
           show`` (=. name expr) = name +++ " = " +++ show expr
-          show`` (Eq _ expr1 expr2) = showBin " == " expr1 expr2
+          show`` (Eq   _ expr1 expr2) = showBin " == " expr1 expr2
           show`` (Lteq _ expr1 expr2) = showBin " <= " expr1 expr2
-          show`` (Lt _ expr1 expr2) = showBin " < " expr1 expr2
+          show`` (Lt   _ expr1 expr2) = showBin " < " expr1 expr2
           show`` (Gteq _ expr1 expr2) = showBin " >= " expr1 expr2
-          show`` (Gt _ expr1 expr2) = showBin " > " expr1 expr2
+          show`` (Gt   _ expr1 expr2) = showBin " > " expr1 expr2
           show`` (Not _ expr) = show` True expr
-          show`` (Or _ expr1 expr2) = showBin " || " expr1 expr2
+          show`` (Or  _ expr1 expr2) = showBin " || " expr1 expr2
           show`` (And _ expr1 expr2) = showBin " && " expr1 expr2
           show`` (:. expr1 expr2) = show expr1 +++ ";\n" +++ show expr2
           show`` (If condition Then exprThen Else exprElse) = "if(" +++ show condition +++ ") then {\n" +++ indent (show exprThen) +++ "\n} else {\n" +++ indent (show exprElse) +++ "\n}"
@@ -273,7 +294,7 @@ show expr = show` False expr
 integer` :: (Expression Int) -> Expression Int
 integer` e = e
 
-set` :: (Expression ('Set'.Set a)) -> (Expression ('Set'.Set a))
+set` :: (Expression Set) -> (Expression Set)
 set` s = s
 
 logical` :: (Expression Bool) -> Expression Bool
@@ -321,8 +342,8 @@ findFirstNPrimes n =
             skip
         ) Else (
             // No divisor has been found; prime
-            //"primes" =. (set` (Var "primes") ++. integer` (Var "cur")) :.
-            "primes" =. (Var "primes" ++. set [1]) :.
+            "primes" =. (set` (Var "primes") ++. integer` (Var "cur")) :.
+            //"primes" =. (set` (Var "primes") ++. set [1]) :.
             skip
         ) :.
         "cur" =. Var "cur" +. Lit 1
@@ -333,4 +354,4 @@ Start
     #prog1 = Size bm (set [1,5,7,7]) +. Lit 39
     #prog2 = findFirstNPrimes 15
     #prog3 = fac2 5
-    = (unS (eval prog2)) initialState
+    = unS (eval prog2) initialState
