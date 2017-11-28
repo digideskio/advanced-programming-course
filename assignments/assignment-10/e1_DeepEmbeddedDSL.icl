@@ -55,11 +55,11 @@ instance * Set where
    // Though one issue is that variables can get void values now, e.g. '"a" =. Skip',
    // but this is also possible through e.g. '"a" =. Lit ()'
    | (:.) infixr 1 (Expression a) (Expression a)
-   | IF         (Expression Bool) Then (Expression a) Else (Expression a)
+   | If         (Expression Bool) Then (Expression a) Else (Expression a)
    // () because a for loop might not return a value (e.g. its set is empty), and
    // though bm a (Maybe a) could also work, there is no wider support for this in
    // the language we are creating.
-   | E.b: For   (BM a ()) Identifier In (Expression Set) Do (Expression b)
+   | E.b: For   (BM a ()) Identifier In (Expression Set) Do (Expression b) & TC b
    | Skip       (BM a ())
 
 :: Then = Then
@@ -73,9 +73,10 @@ instance * Set where
 
 true = Lit True
 false = Lit False
+skip = Skip bm
 
-new :: [Int] -> Expression Set
-new l = Lit ('Set'.fromList l)
+set :: [Int] -> Expression Set
+set l = Lit ('Set'.fromList l)
 
 (==.) infix 4 :: (Expression a) (Expression a) -> Expression Bool | TC, ==, toString a
 (==.) expr1 expr2 = Eq bm expr1 expr2
@@ -175,22 +176,17 @@ eval (And {f} boolExpr1 boolExpr2) = ev f boolExpr1 boolExpr2
     where ev :: (Bool -> a) (Expression Bool) (Expression Bool) -> Sem a | TC a
           ev f e1 e2 = eval e1 >>= \r1 -> eval e2 >>= \r2 -> (pure o f) (r1 && r2)
 eval (:. expr1 expr2) = eval expr1 >>| eval expr2
-eval (IF condition Then exprThen Else exprElse) =
-    eval condition
-    >>= \cond ->
-        if cond
-            (eval exprThen)
-            (eval exprElse)
+eval (If condition Then exprThen Else exprElse) =
+    eval condition >>= \cond -> if cond (eval exprThen) (eval exprElse)
 eval (For {f} identifier In exprSet Do exprBody) = ev f identifier exprSet exprBody
-    where 
-          ev :: (() -> a) Identifier (Expression ('Set'.Set b)) (Expression c) -> Sem a | TC a & TC b
+    where ev :: (() -> a) Identifier (Expression ('Set'.Set b)) (Expression c) -> Sem a | TC a & TC b & TC c
           ev f identifier exprSet exprBody = eval exprSet
                >>= \set -> ev` f identifier ('Set'.toList set) exprBody
-          ev` :: (() -> a) Identifier [b] (Expression c) -> (Sem a) | TC a & TC b
+          ev` :: (() -> a) Identifier [b] (Expression c) -> (Sem a) | TC a & TC b & TC c
           ev` f identifier [] _ = (pure o f) ()
           ev` f identifier [s:ss] exprBody = store identifier s >>| eval exprBody >>| ev` f  identifier ss exprBody
 
 show :: (Expression a) -> String
 show _ = undef
 
-Start = unS (eval (Size bm (new [1,5,7,7]) +. Lit 39)) initialState
+Start = unS (eval (Size bm (set [1,5,7,7]) +. Lit 39)) initialState
