@@ -185,6 +185,7 @@ eval (For {f} identifier In exprSet Do exprBody) = ev f identifier exprSet exprB
           ev` :: (() -> a) Identifier [b] (Expression c) -> (Sem a) | TC a & TC b & TC c
           ev` f identifier [] _ = (pure o f) ()
           ev` f identifier [s:ss] exprBody = store identifier s >>| eval exprBody >>| ev` f  identifier ss exprBody
+eval (Skip {f}) = (pure o f) ()
 
 show :: (Expression a) -> String
 show _ = undef
