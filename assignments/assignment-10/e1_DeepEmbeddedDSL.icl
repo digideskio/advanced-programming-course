@@ -37,7 +37,6 @@ instance * Set where
 
 :: Expression a
    = Lit a
-   | New        (BM a Set) [Int]
    | Size       (BM a Int) (Expression Set)
    | Var Identifier
    | (+.) infixl 6 (Expression a) (Expression a) & + a
@@ -59,6 +58,9 @@ instance * Set where
 
 true = Lit True
 false = Lit False
+
+new :: [Int] -> Expression Set
+new l = Lit ('Set'.fromList l)
 
 (==.) infix 4 :: (Expression a) (Expression a) -> Expression Bool | TC, ==, toString a
 (==.) expr1 expr2 = Eq bm expr1 expr2
@@ -124,7 +126,6 @@ read name = S \s0 -> case 'Map'.get name s0 of
 eval :: (Expression a) -> Sem a | TC a
 eval (Lit l) = pure l
 eval (Var name) = read name
-eval (New {f} l) = (pure o f o 'Set'.fromList) l
 eval (Size {f} setExpr) = eval setExpr >>= \set -> (pure o f) ('Set'.size set)
 eval (+. expr1 expr2) = ev expr1 expr2
     where ev :: (Expression a) (Expression a) -> Sem a | TC,+ a
@@ -163,4 +164,4 @@ eval (And {f} boolExpr1 boolExpr2) = ev f boolExpr1 boolExpr2
 show :: (Expression a) -> String
 show _ = undef
 
-Start = unS (eval (Size bm (New bm [1,5,7,7]) +. Lit 39)) initialState
+Start = unS (eval (Size bm (new [1,5,7,7]) +. Lit 39)) initialState
