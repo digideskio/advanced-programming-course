@@ -26,31 +26,40 @@ bm = {f = id, t = id}
 :: Identifier :== String
 :: Set :== 'Set'.Set Int
 
-instance + Set where
-    (+) s1 s2 = 'Set'.union s1 s2
+class SetOperators. a b where
+    setPlus  :: ('Set'.Set a) b -> 'Set'.Set a
+    setMinus :: ('Set'.Set a) b -> 'Set'.Set a
+    setTimes :: ('Set'.Set a) b -> 'Set'.Set a
 
-instance - Set where
-    (-) s1 s2 = 'Set'.difference s1 s2
+instance SetOperators a ('Set'.Set a) | <, == a where
+    setPlus  s1 s2 = 'Set'.union s1 s2
+    setMinus s1 s2 = 'Set'.difference s1 s2
+    setTimes s1 s2 = 'Set'.intersection s1 s2
 
-instance * Set where
-    (*) s1 s2 = 'Set'.intersection s1 s2
+instance SetOperators Int Int where
+    setPlus  s i = undef
+    setMinus s i = undef
+    setTimes s i = undef
 
 :: Expression a
    = Lit a
-   | Size       (BM a Int) (Expression Set)
+   | Size            (BM a Int) (Expression Set)
    | Var Identifier
    | (+.) infixl 6 (Expression a) (Expression a) & + a
    | (-.) infixl 6 (Expression a) (Expression a) & - a
    | (*.) infixl 7 (Expression a) (Expression a) & * a
+   | E.b c: SetPlus  (BM a ('Set'.Set b)) (Expression ('Set'.Set b)) (Expression c) & SetOperators b c
+   | E.b c: SetMinus (BM a ('Set'.Set b)) (Expression ('Set'.Set b)) (Expression c) & SetOperators b c
+   | E.b c: SetTimes (BM a ('Set'.Set b)) (Expression ('Set'.Set b)) (Expression c) & SetOperators b c
    | (=.) infixl 2 Identifier (Expression a)
-   | E.b: Eq    (BM a Bool) (Expression b) (Expression b) & TC, == b
-   | E.b: Lteq  (BM a Bool) (Expression b) (Expression b) & TC, Ord b
-   | E.b: Lt    (BM a Bool) (Expression b) (Expression b) & TC, Ord b
-   | E.b: Gteq  (BM a Bool) (Expression b) (Expression b) & TC, Ord b
-   | E.b: Gt    (BM a Bool) (Expression b) (Expression b) & TC, Ord b
-   | Not        (BM a Bool) (Expression Bool)
-   | Or         (BM a Bool) (Expression Bool) (Expression Bool)
-   | And        (BM a Bool) (Expression Bool) (Expression Bool)
+   | E.b: Eq         (BM a Bool) (Expression b) (Expression b) & TC, == b
+   | E.b: Lteq       (BM a Bool) (Expression b) (Expression b) & TC, Ord b
+   | E.b: Lt         (BM a Bool) (Expression b) (Expression b) & TC, Ord b
+   | E.b: Gteq       (BM a Bool) (Expression b) (Expression b) & TC, Ord b
+   | E.b: Gt         (BM a Bool) (Expression b) (Expression b) & TC, Ord b
+   | Not             (BM a Bool) (Expression Bool)
+   | Or              (BM a Bool) (Expression Bool) (Expression Bool)
+   | And             (BM a Bool) (Expression Bool) (Expression Bool)
    // Expression-based language (like Rust <3)
    // Though one issue is that variables can get void values now, e.g. '"a" =. Skip',
    // but this is also possible through e.g. '"a" =. Lit ()'
@@ -80,6 +89,15 @@ set :: [Int] -> Expression Set
 set l = Lit ('Set'.fromList l)
 
 size = Size bm
+
+(++.) infixl 6 :: (Expression ('Set'.Set a)) (Expression b) -> Expression ('Set'.Set a) | SetOperators a b
+(++.) expr1 expr2 = SetPlus bm expr1 expr2
+
+(--.) infixl 6 :: (Expression ('Set'.Set a)) (Expression b) -> Expression ('Set'.Set a) | SetOperators a b
+(--.) expr1 expr2 = SetMinus bm expr1 expr2
+
+(**.) infixl 6 :: (Expression ('Set'.Set a)) (Expression b) -> Expression ('Set'.Set a) | SetOperators a b
+(**.) expr1 expr2 = SetTimes bm expr1 expr2
 
 (==.) infix 4 :: (Expression a) (Expression a) -> Expression Bool | TC, ==, toString a
 (==.) expr1 expr2 = Eq bm expr1 expr2
@@ -246,7 +264,8 @@ findFirstNPrimes n =
             skip
         ) Else (
             // No divisor has been found; prime
-            //"primes" =. (set` (Var "primes") +. integer` (Var "cur")) :.
+            //"primes" =. (set` (Var "primes") ++. integer` (Var "cur")) :.
+            "primes" =. (Var "primes" ++. set [1]) :.
             skip
         ) :.
         "cur" =. Var "cur" +. Lit 1
