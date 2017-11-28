@@ -33,6 +33,9 @@ instance toString ('Set'.Set a) | toString a where
               toString` [a] = toString a
               toString` [a:as] = toString a +++ ", " +++ toString` as
 
+instance toString () where
+    toString _ = "()"
+
 instance + Set where
     (+) s1 s2 = 'Set'.union s1 s2
 
@@ -61,12 +64,13 @@ instance * Set where
    // Expression-based language (like Rust <3)
    // Though one issue is that variables can get void values now, e.g. '"a" =. Skip',
    // but this is also possible through e.g. '"a" =. Lit ()'
-   | (:.) infixr 1 (Expression a) (Expression a)
+   | E.b: (:.) infixr 1 (Expression b) (Expression a) & TC, toString b
    | If         (Expression Bool) Then (Expression a) Else (Expression a)
    // () because a for loop might not return a value (e.g. its set is empty), and
    // though bm a (Maybe a) could also work, there is no wider support for this in
    // the language we are creating.
    | E.b: For   (BM a ()) Identifier In (Expression Set) Do (Expression b) & TC, toString b
+   | E.b: While (BM a ()) (Expression Bool) Do (Expression b) & TC, toString b
    | Skip       (BM a ())
 
 :: Then = Then
@@ -85,6 +89,8 @@ skip = Skip bm
 set :: [Int] -> Expression Set
 set l = Lit ('Set'.fromList l)
 
+size = Size bm
+
 (==.) infix 4 :: (Expression a) (Expression a) -> Expression Bool | TC, ==, toString a
 (==.) expr1 expr2 = Eq bm expr1 expr2
 
@@ -99,6 +105,9 @@ set l = Lit ('Set'.fromList l)
 
 (>.) infix 4 :: (Expression a) (Expression a) -> Expression Bool | TC, Ord, toString a
 (>.) expr1 expr2 = Gt bm expr1 expr2
+
+for = For bm
+while = While bm
 
 //////////////////////////////////////////////////
 // Semantics                                    //
@@ -192,6 +201,12 @@ eval (For {f} identifier In exprSet Do exprBody) = ev f identifier exprSet exprB
           ev` :: (() -> a) Identifier [b] (Expression c) -> (Sem a) | TC a & TC b & TC c
           ev` f identifier [] _ = (pure o f) ()
           ev` f identifier [s:ss] exprBody = store identifier s >>| eval exprBody >>| ev` f  identifier ss exprBody
+eval (While {f} exprCond Do exprBody) = ev f exprCond exprBody
+    where ev :: (() -> a) (Expression Bool) (Expression b) -> (Sem a) | TC b
+          ev f exprCond exprBody =
+              eval exprCond >>=
+              \cond -> if cond (eval exprBody >>| ev f exprCond exprBody) ((pure o f) ())
+eval (Skip {f}) = (pure o f) ()
 
 show :: (Expression a) -> String | toString a
 show expr = show` False expr
@@ -219,10 +234,81 @@ show expr = show` False expr
           show`` (:. expr1 expr2) = show expr1 +++ ";\n" +++ show expr2
           show`` (If condition Then exprThen Else exprElse) = "if(" +++ show condition +++ ") then {\n" +++ indent (show exprThen) +++ "\n} else {\n" +++ indent (show exprElse) +++ "\n}"
           show`` (For _ name In exprSet Do exprBody) = "for " +++ name +++ " in " +++ show exprSet +++ " do {\n" +++ indent (show exprBody) +++ "\n}"
+          show`` (While _ condition Do exprBody) = "while(" +++ show condition +++ ") do {\n" +++ indent (show exprBody) +++ "\n}"
           
           showBin :: String (Expression b) (Expression b) -> String | toString b
           showBin op expr1 expr2 = show` True expr1 +++ op +++ show` True expr2
           indent :: String -> String
-          indent str = replaceSubString "\n" "\n    " str
+          indent str = "    " +++ replaceSubString "\n" "\n    " str
 
-Start = unS (eval (Size bm (set [1,5,7,7]) +. Lit 39)) initialState
+/* Hacky type hints
+ * Necessary for, e.g.:
+ *     variable "r" * variable "n"
+ * as * is a class, and we use dynamics, so Clean cannot infer that
+ * variable "r" should be an Element. Does Clean implement nicer way
+ * to give an inline type hint? For example:
+ *     (variable "r") :: Element  * variable "n"
+ */ 
+integer` :: (Expression Int) -> Expression Int
+integer` e = e
+
+set` :: (Expression ('Set'.Set a)) -> (Expression ('Set'.Set a))
+set` s = s
+
+logical` :: (Expression Bool) -> Expression Bool
+logical` l = l
+
+fac2 :: Int -> Expression Int
+fac2 n =
+    "n" =. Lit n :.
+    "r" =. Lit 1 :.
+    If (Lit 0 <. Var "n") Then (
+        while (Lit 1 <. Var "n") Do (
+            "r" =. integer` (Var "r") *. Var "n" :.
+            "n" =. Var "n" -. Lit 1
+        )
+    ) Else (
+        skip
+    ) :.
+    "out" =. Var "r"
+
+findFirstNPrimes :: Int -> Expression ('Set'.Set Int)
+findFirstNPrimes n =
+    "primes" =. set [] :.
+    "cur" =. Lit 2 :.
+    // Loop until n primes are found
+    while (size (Var "primes") <. Lit n) Do (
+        "n" =. Lit 2 :.
+        "hasDivisor" =. false :.
+        // Try to find an n * multiplier such that n * multiplier = cur, which means
+        // cur is divisible by more than 1 and itself.
+        while (integer` (Var "n") <. Var "cur") Do (
+            "multiplier" =. Lit 1 :.
+            while (integer` (Var "multiplier") <. Var "cur") Do (
+                If ((integer` (Var "n") *. Var "multiplier") ==. Var "cur") Then (
+                    "hasDivisor" =. true :.
+                    skip
+                ) Else (
+                    skip
+                ) :.
+                "multiplier" =. Var "multiplier" +. Lit 1
+            ) :.
+            "n" =. Var "n" +. Lit 1
+        ) :.
+        If (Var "hasDivisor") Then (
+            // A divisor has been found; not prime
+            skip
+        ) Else (
+            // No divisor has been found; prime
+            //"primes" =. (set` (Var "primes") +. integer` (Var "cur")) :.
+            skip
+        ) :.
+        "cur" =. Var "cur" +. Lit 1
+    ) :.
+    Var "primes"
+
+Start
+    #prog1 = Size bm (set [1,5,7,7]) +. Lit 39
+    #prog2 = findFirstNPrimes 15
+    #prog3 = fac2 5
+    = (unS (eval prog2)) initialState
