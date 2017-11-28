@@ -12,6 +12,7 @@ module e1_DeepEmbeddedDSL
 import StdEnv, StdMaybe, Data.Either, Data.Functor, Control.Applicative, Control.Monad
 import qualified Data.Map as Map
 import qualified Data.Set as Set
+from Text import class Text(replaceSubString), instance Text String
 
 //////////////////////////////////////////////////
 // Language data structures                     //
@@ -25,6 +26,18 @@ bm = {f = id, t = id}
 
 :: Identifier :== String
 :: Set :== 'Set'.Set Int
+
+instance toString ('Set'.Set a) | toString a where
+    toString s = "{" +++ toString` ('Set'.toList s) +++ "}"
+        where toString` [] = ""
+              toString` [a] = toString a
+              toString` [a:as] = toString a +++ ", " +++ toString` as
+
+instance toString () where
+    toString _ = "()"
+
+instance + Set where
+    (+) s1 s2 = 'Set'.union s1 s2
 
 class SetOperators. a b where
     setPlus  :: ('Set'.Set a) b -> 'Set'.Set a
@@ -52,24 +65,24 @@ instance SetOperators Int Int where
    | E.b c: SetMinus (BM a ('Set'.Set b)) (Expression ('Set'.Set b)) (Expression c) & SetOperators b c
    | E.b c: SetTimes (BM a ('Set'.Set b)) (Expression ('Set'.Set b)) (Expression c) & SetOperators b c
    | (=.) infixl 2 Identifier (Expression a)
-   | E.b: Eq         (BM a Bool) (Expression b) (Expression b) & TC, == b
-   | E.b: Lteq       (BM a Bool) (Expression b) (Expression b) & TC, Ord b
-   | E.b: Lt         (BM a Bool) (Expression b) (Expression b) & TC, Ord b
-   | E.b: Gteq       (BM a Bool) (Expression b) (Expression b) & TC, Ord b
-   | E.b: Gt         (BM a Bool) (Expression b) (Expression b) & TC, Ord b
+   | E.b: Eq         (BM a Bool) (Expression b) (Expression b) & TC, toString, == b
+   | E.b: Lteq       (BM a Bool) (Expression b) (Expression b) & TC, toString, Ord b
+   | E.b: Lt         (BM a Bool) (Expression b) (Expression b) & TC, toString, Ord b
+   | E.b: Gteq       (BM a Bool) (Expression b) (Expression b) & TC, toString, Ord b
+   | E.b: Gt         (BM a Bool) (Expression b) (Expression b) & TC, toString, Ord b
    | Not             (BM a Bool) (Expression Bool)
    | Or              (BM a Bool) (Expression Bool) (Expression Bool)
    | And             (BM a Bool) (Expression Bool) (Expression Bool)
    // Expression-based language (like Rust <3)
    // Though one issue is that variables can get void values now, e.g. '"a" =. Skip',
    // but this is also possible through e.g. '"a" =. Lit ()'
-   | E.b: (:.) infixr 1 (Expression b) (Expression a) & TC b
+   | E.b: (:.) infixr 1 (Expression b) (Expression a) & TC, toString b
    | If         (Expression Bool) Then (Expression a) Else (Expression a)
    // () because a for loop might not return a value (e.g. its set is empty), and
    // though bm a (Maybe a) could also work, there is no wider support for this in
    // the language we are creating.
-   | E.b: For   (BM a ()) Identifier In (Expression Set) Do (Expression b) & TC b
-   | E.b: While (BM a ()) (Expression Bool) Do (Expression b) & TC b
+   | E.b: For   (BM a ()) Identifier In (Expression Set) Do (Expression b) & TC, toString b
+   | E.b: While (BM a ()) (Expression Bool) Do (Expression b) & TC, toString b
    | Skip       (BM a ())
 
 :: Then = Then
@@ -216,8 +229,38 @@ eval (While {f} exprCond Do exprBody) = ev f exprCond exprBody
               \cond -> if cond (eval exprBody >>| ev f exprCond exprBody) ((pure o f) ())
 eval (Skip {f}) = (pure o f) ()
 
-show :: (Expression a) -> String
-show _ = undef
+show :: (Expression a) -> String | toString a
+show expr = show` False expr
+    where show` :: Bool (Expression a) -> String | toString a
+          // The flag pp indicates whether parentheses should be printed around the expression
+          show`  _ (Lit l) = toString l
+          show`  _ (Size _ setExpr) = "|" +++ show setExpr +++ "|"
+          show`  _ (Var name) = name
+          show`  _ (Skip _) = "skip"
+          show`  False expr = show`` expr
+          show`  True  expr = "(" +++ show`` expr +++ ")"
+          show`` :: (Expression a) -> String | toString a
+          show`` (+. expr1 expr2) = showBin " + " expr1 expr2
+          show`` (-. expr1 expr2) = showBin " - " expr1 expr2
+          show`` (*. expr1 expr2) = showBin " * " expr1 expr2
+          show`` (=. name expr) = name +++ " = " +++ show expr
+          show`` (Eq _ expr1 expr2) = showBin " == " expr1 expr2
+          show`` (Lteq _ expr1 expr2) = showBin " <= " expr1 expr2
+          show`` (Lt _ expr1 expr2) = showBin " < " expr1 expr2
+          show`` (Gteq _ expr1 expr2) = showBin " >= " expr1 expr2
+          show`` (Gt _ expr1 expr2) = showBin " > " expr1 expr2
+          show`` (Not _ expr) = show` True expr
+          show`` (Or _ expr1 expr2) = showBin " || " expr1 expr2
+          show`` (And _ expr1 expr2) = showBin " && " expr1 expr2
+          show`` (:. expr1 expr2) = show expr1 +++ ";\n" +++ show expr2
+          show`` (If condition Then exprThen Else exprElse) = "if(" +++ show condition +++ ") then {\n" +++ indent (show exprThen) +++ "\n} else {\n" +++ indent (show exprElse) +++ "\n}"
+          show`` (For _ name In exprSet Do exprBody) = "for " +++ name +++ " in " +++ show exprSet +++ " do {\n" +++ indent (show exprBody) +++ "\n}"
+          show`` (While _ condition Do exprBody) = "while(" +++ show condition +++ ") do {\n" +++ indent (show exprBody) +++ "\n}"
+          
+          showBin :: String (Expression b) (Expression b) -> String | toString b
+          showBin op expr1 expr2 = show` True expr1 +++ op +++ show` True expr2
+          indent :: String -> String
+          indent str = "    " +++ replaceSubString "\n" "\n    " str
 
 /* Hacky type hints
  * Necessary for, e.g.:
@@ -235,6 +278,20 @@ set` s = s
 
 logical` :: (Expression Bool) -> Expression Bool
 logical` l = l
+
+fac2 :: Int -> Expression Int
+fac2 n =
+    "n" =. Lit n :.
+    "r" =. Lit 1 :.
+    If (Lit 0 <. Var "n") Then (
+        while (Lit 1 <. Var "n") Do (
+            "r" =. integer` (Var "r") *. Var "n" :.
+            "n" =. Var "n" -. Lit 1
+        )
+    ) Else (
+        skip
+    ) :.
+    "out" =. Var "r"
 
 findFirstNPrimes :: Int -> Expression ('Set'.Set Int)
 findFirstNPrimes n =
@@ -275,4 +332,5 @@ findFirstNPrimes n =
 Start
     #prog1 = Size bm (set [1,5,7,7]) +. Lit 39
     #prog2 = findFirstNPrimes 15
+    #prog3 = fac2 5
     = (unS (eval prog2)) initialState
