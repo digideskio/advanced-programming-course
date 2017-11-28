@@ -96,6 +96,9 @@ size = Size bm
 (>.) infix 4 :: (Expression a) (Expression a) -> Expression Bool | TC, Ord, toString a
 (>.) expr1 expr2 = Gt bm expr1 expr2
 
+for = For bm
+while = While bm
+
 //////////////////////////////////////////////////
 // Semantics                                    //
 //////////////////////////////////////////////////
@@ -216,7 +219,39 @@ logical` :: (Expression Bool) -> Expression Bool
 logical` l = l
 
 findFirstNPrimes :: Int -> Expression ('Set'.Set Int)
-findFirstNPrimes n = undef
+findFirstNPrimes n =
+    "primes" =. set [] :.
+    "cur" =. Lit 2 :.
+    // Loop until n primes are found
+    while (size (Var "primes") <. Lit n) Do (
+        "n" =. Lit 2 :.
+        "hasDivisor" =. false :.
+        // Try to find an n * multiplier such that n * multiplier = cur, which means
+        // cur is divisible by more than 1 and itself.
+        while (integer` (Var "n") <. Var "cur") Do (
+            "multiplier" =. Lit 1 :.
+            while (integer` (Var "multiplier") <. Var "cur") Do (
+                If ((integer` (Var "n") *. Var "multiplier") ==. Var "cur") Then (
+                    "hasDivisor" =. true :.
+                    skip
+                ) Else (
+                    skip
+                ) :.
+                "multiplier" =. Var "multiplier" +. Lit 1
+            ) :.
+            "n" =. Var "n" +. Lit 1
+        ) :.
+        If (Var "hasDivisor") Then (
+            // A divisor has been found; not prime
+            skip
+        ) Else (
+            // No divisor has been found; prime
+            //"primes" =. (set` (Var "primes") +. integer` (Var "cur")) :.
+            skip
+        ) :.
+        "cur" =. Var "cur" +. Lit 1
+    ) :.
+    Var "primes"
 
 Start
     #prog1 = Size bm (set [1,5,7,7]) +. Lit 39
