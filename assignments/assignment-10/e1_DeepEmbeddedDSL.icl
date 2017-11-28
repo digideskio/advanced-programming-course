@@ -51,6 +51,21 @@ instance * Set where
    | Not        (BM a Bool) (Expression Bool)
    | Or         (BM a Bool) (Expression Bool) (Expression Bool)
    | And        (BM a Bool) (Expression Bool) (Expression Bool)
+   // Expression-based language (like Rust <3)
+   // Though one issue is that variables can get void values now, e.g. '"a" =. Skip',
+   // but this is also possible through e.g. '"a" =. Lit ()'
+   | (:.) infixr 1 (Expression a) (Expression a)
+   | IF         (Expression Bool) Then (Expression a) Else (Expression a)
+   // () because a for loop might not return a value (e.g. its set is empty), and
+   // though bm a (Maybe a) could also work, there is no wider support for this in
+   // the language we are creating.
+   | E.b: For   (BM a ()) Identifier In (Expression Set) Do (Expression b)
+   | Skip       (BM a ())
+
+:: Then = Then
+:: Else = Else
+:: In = In
+:: Do = Do
 
 //////////////////////////////////////////////////
 // Syntactic sugar                              //
@@ -159,7 +174,21 @@ eval (Or {f} boolExpr1 boolExpr2) = ev f boolExpr1 boolExpr2
 eval (And {f} boolExpr1 boolExpr2) = ev f boolExpr1 boolExpr2
     where ev :: (Bool -> a) (Expression Bool) (Expression Bool) -> Sem a | TC a
           ev f e1 e2 = eval e1 >>= \r1 -> eval e2 >>= \r2 -> (pure o f) (r1 && r2)
-
+eval (:. expr1 expr2) = eval expr1 >>| eval expr2
+eval (IF condition Then exprThen Else exprElse) =
+    eval condition
+    >>= \cond ->
+        if cond
+            (eval exprThen)
+            (eval exprElse)
+eval (For {f} identifier In exprSet Do exprBody) = ev f identifier exprSet exprBody
+    where 
+          ev :: (() -> a) Identifier (Expression ('Set'.Set b)) (Expression c) -> Sem a | TC a & TC b
+          ev f identifier exprSet exprBody = eval exprSet
+               >>= \set -> ev` f identifier ('Set'.toList set) exprBody
+          ev` :: (() -> a) Identifier [b] (Expression c) -> (Sem a) | TC a & TC b
+          ev` f identifier [] _ = (pure o f) ()
+          ev` f identifier [s:ss] exprBody = store identifier s >>| eval exprBody >>| ev` f  identifier ss exprBody
 
 show :: (Expression a) -> String
 show _ = undef
