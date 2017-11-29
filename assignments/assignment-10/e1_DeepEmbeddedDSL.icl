@@ -359,4 +359,6 @@ Start
     #prog1 = Size bm (set [1,5,7,7]) +. Lit 39
     #prog2 = findFirstNPrimes 15
     #prog3 = fac2 5
-    = (showOutput (unS (eval prog2) initialState), "\n-----\n" +++ show prog2)
+    //--
+    #prog = prog2
+    = (showOutput (unS (eval prog) initialState), "\n-----\n" +++ show prog)
