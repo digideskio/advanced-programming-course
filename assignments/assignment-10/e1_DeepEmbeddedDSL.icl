@@ -346,20 +346,17 @@ findFirstNPrimes n =
             ) :.
             "n" =. Var "n" +. Lit 1
         ) :.
-        If (Var "hasDivisor") Then (
-            // A divisor has been found; not prime
-            skip
-        ) Else (
-            // No divisor has been found; prime
-            "primes" =. (set` (Var "primes") ++. integer` (Var "cur")) :.
-            skip
-        ) :.
+        "primes" =. If (Var "hasDivisor") Then (Var "primes") Else (set` (Var "primes") ++. integer` (Var "cur")) :.
         "cur" =. Var "cur" +. Lit 1
     ) :.
     Var "primes"
 
+showOutput :: (Either String a, State) -> String | toString a
+showOutput (Left err, _) = "Error: " +++ err
+showOutput (Right out, _) = toString out
+          
 Start
     #prog1 = Size bm (set [1,5,7,7]) +. Lit 39
     #prog2 = findFirstNPrimes 15
     #prog3 = fac2 5
-    = unS (eval prog2) initialState
+    = (showOutput (unS (eval prog2) initialState), "\n-----\n" +++ show prog2)
