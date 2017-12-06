@@ -196,6 +196,8 @@ instance statements Show where
     For f = freshVar \v -> let (e Do s) = f v in put "for( " +.+ v +.+ put " in " +.+ e +.+ put " ) {" +.+ 
                                           indent +.+ nl +.+ s +.+ put ";" +.+ unindent +.+ nl +.+ put "}"
 
+// Type class to add context restrictions for polymorphic functions on views
+class DSL v | literals, variables, arithexprs, booleanexprs, comparisons, statements v
 
 //////////////////////////////////////////////////
 // Views: Eval                                  //
@@ -207,8 +209,7 @@ instance statements Show where
 // Testing programs                             //
 //////////////////////////////////////////////////
 
-/*
-fac2 :: Int -> v Int Stmt
+fac2 :: Int -> v Int Stmt | DSL v
 fac2 num =
     Var \n = num In
     Var \r = 1 In
@@ -221,10 +222,8 @@ fac2 num =
         Skip
     ) :.
     r
-*/
 
-/*
-findFirstNPrimes :: Int -> v (Set Int) Stmt
+findFirstNPrimes :: Int -> v (Set Int) Stmt | DSL v
 findFirstNPrimes num =
     Var \primes = emptySet In
     Var \cur = 2 In
@@ -252,10 +251,9 @@ findFirstNPrimes num =
     primes
     where emptySet :: Set Int
           emptySet = 'Set'.fromList []
-*/
 
 
 testprog = Size (New [1,2] +. New [2,3])
-Start = show testprog
+Start = show (findFirstNPrimes 15)
 
 
