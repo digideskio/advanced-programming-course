@@ -105,7 +105,7 @@ class statements v where
     (:.) infixr 1 :: (v a p) (v b q) -> v b Stmt
     If :: (v Bool p) Then (v a q) Else (v b r) -> v () Stmt             | isExpr p
     While :: (v Bool p) Repeat (v a q) -> v () Stmt                     | isExpr p
-    For :: ((v a Upd) -> Do (v (Set a) p) (v b q)) -> v () Stmt         | isExpr p
+    For :: ((v a Upd) -> Do (v (Set a) p) (v b q)) -> v () Stmt         | type a & isExpr p
 
 :: Then = Then
 :: Else = Else
@@ -279,10 +279,26 @@ instance statements Eval where
     (:.) a b = a >>| b >>= \b` -> pure b`
     If c Then t Else e = c >>= \condition -> if condition (t >>| pure ()) (e >>| pure ())
     While c Repeat s = c >>= \condition` -> if condition` (s >>| While c Repeat s) (pure ())
-    For f = undef
-
-    //For f = freshVar \v -> let (e Do s) = f v in put "for( " +.+ v +.+ put " in " +.+ e +.+ put " ) {" +.+ 
-    //                                      indent +.+ nl +.+ s +.+ put ";" +.+ unindent +.+ nl +.+ put "}"
+    For f = Eval \r state ->
+                let ((Eval set) Do (Eval rest)) = f (Eval (readWriteVar state.vars))
+                // Evaluate set expression
+                in (case set Read state of
+                    (Left err, state2) = (Left err, state2)
+                    (Right set, state2) =
+                        // Get set values in a list
+                        let values = 'Set'.toList set
+                        // Get fresh variable number
+                        in let varN = state.vars
+                            // Recurse through set values, constantly evaluating the For statement body,
+                            // propagating any errors, and returning the void () value if evaluation succeeds
+                            in foldr (\v -> \(result, state) -> case result of
+                                Left err = (Left err, state)
+                                Right res = case rest Read {state & map = 'Map'.put varN (dynamic v) state.map} of
+                                    (Left err, state`) = (Left err, state`)
+                                    (Right _, state`)  = (Right res, state`) 
+                            ) (Right (), {state2 & vars = inc state2.vars}) values
+                        
+                )
 
 //////////////////////////////////////////////////
 // Testing programs                             //
@@ -335,7 +351,11 @@ setTest :: v Int Stmt | DSL v
 setTest =
     Var \set = ('Set'.fromList []) In
     set =. New [5,1,1,2,2,3,3,4,4] :.
-    Lit 42
+    Var \sum = 0 In
+    For (\v = set Do (
+    	sum =. sum +. v
+    )) :.
+    sum // 15
 
 testprog = Size (New [1,2] +. New [2,3])
 Start 
