@@ -213,8 +213,31 @@ unEval (Eval f) = f
 initialState :: State
 initialState = { map = 'Map'.newMap, vars = 0 }
 
-eval :: (Eval a p) -> Result a
-eval (Eval f) = fst (f Read initialState)
+eval :: (Eval a p) -> (Result a, State)
+eval (Eval f) = f Read initialState
+
+prettyEval :: (Eval a p) -> String | toString a
+prettyEval f = case eval f of
+    (Left err, state) = "Error: " +++ err +++ "\n\n" +++ prettyShowState` ('Map'.toList state.map)
+    (Right res, state) = "Result: " +++ toString res +++ "\n\n" +++ prettyShowState` ('Map'.toList state.map)
+prettyShowState` [] = ""
+prettyShowState` [(var, val):vs] = "v" +++ toString var +++ " = " +++ dynamicPrint val +++ "\n" +++ prettyShowState` vs
+              
+dynamicPrint :: Dynamic -> String
+dynamicPrint a = dynamicPrint` a
+    where
+    dynamicPrint` :: Dynamic -> String 
+    dynamicPrint` (a :: Int) = toString a
+    dynamicPrint` (a :: Bool) = toString a
+    dynamicPrint` (a :: Char) = toString a
+    // Recursive printing was giving some trouble (set does not contain a Dynamic,
+    // and turning it into a dynamic caused a runtime error "index out of range",
+    // and perfoming a context restriction "a :: 'Set'.Set a | toString a" also
+    // did not work, as it yields internal overloading errors)
+    dynamicPrint` (a :: 'Set'.Set Int)  = "{" +++ foldr (\val -> \pr -> pr +++ toString val +++ ",") "" ('Set'.toList a) +++ "}"
+    dynamicPrint` (a :: 'Set'.Set Bool) = "{" +++ foldr (\val -> \pr -> pr +++ toString val +++ ",") "" ('Set'.toList a) +++ "}"
+    dynamicPrint` (a :: 'Set'.Set Char) = "{" +++ foldr (\val -> \pr -> pr +++ toString val +++ ",") "" ('Set'.toList a) +++ "}"
+    dynamicPrint` _ = ""
 
 readWriteVar :: Int (ReadWrite a) State -> (Result a, State) | TC a
 readWriteVar n Read state =
@@ -358,11 +381,9 @@ setTest =
 
 testprog = Size (New [1,2] +. New [2,3])
 Start 
-    #prog1 = eval (fac2 5)
-    #prog2 = case eval (findFirstNPrimes 15) of
-        Left _ = []
-        Right s = 'Set'.toList s
-    #prog3 = eval setTest
+    #prog1 = prettyEval (fac2 5)
+    #prog2 = prettyEval (findFirstNPrimes 15)
+    #prog3 = prettyEval setTest
     = prog3
 
 
