@@ -9,10 +9,9 @@ module e1_TypeClassDSL
  * Skeleton for Advanced Programming, week 8+10, 2017
  */
  
-import StdEnv
+import StdEnv, Data.Either, Data.Maybe
 import qualified Data.Map as Map
 import qualified Data.Set as Set
-
 
 //////////////////////////////////////////////////
 // Basic data types                             //
@@ -84,9 +83,9 @@ class arithexprs v where
     (+.)  infixl 6 :: (v a p) (v a q) -> v a Expr                       | + a & isExpr p & isExpr q
     (-.)  infixl 6 :: (v a p) (v a q) -> v a Expr                       | - a & isExpr p & isExpr q
     (*.)  infixl 7 :: (v a p) (v a q) -> v a Expr                       | * a & isExpr p & isExpr q
-    (++.) infixl 6 :: (v (Set a) p) (v a q) -> v (Set a) Expr           | isExpr p & isExpr q
-    (.++) infixr 6 :: (v a p) (v (Set a) q) -> v (Set a) Expr           | isExpr p & isExpr q
-    (--.) infixl 6 :: (v (Set a) p) (v a q) -> v (Set a) Expr           | isExpr p & isExpr q
+    (++.) infixl 6 :: (v (Set a) p) (v a q) -> v (Set a) Expr           | isExpr p & isExpr q & Ord a
+    (.++) infixr 6 :: (v a p) (v (Set a) q) -> v (Set a) Expr           | isExpr p & isExpr q & Ord a
+    (--.) infixl 6 :: (v (Set a) p) (v a q) -> v (Set a) Expr           | isExpr p & isExpr q & Ord a
     (.**) infixr 6 :: (v a p) (v (Set a) q) -> v (Set a) Expr           | * a & isExpr p & isExpr q
 
 class booleanexprs v where
@@ -203,7 +202,56 @@ class DSL v | literals, variables, arithexprs, booleanexprs, comparisons, statem
 // Views: Eval                                  //
 //////////////////////////////////////////////////
 
+:: Eval a p = Eval ((ReadWrite a) State -> (Result a, State))
+:: Result a :== Either String a
+:: ReadWrite a = Read | Write a
+:: State = { map :: 'Map'.Map Int Dynamic, vars :: Int }
 
+unEval :: (Eval a p) -> ((ReadWrite a) State -> (Result a, State))
+unEval (Eval f) = f
+
+initialState :: State
+initialState = { map = 'Map'.newMap, vars = 0 }
+
+readWriteVar :: Int (ReadWrite a) State -> (Result a, State) | TC a
+readWriteVar n Read state =
+    case 'Map'.get n state.map of
+        (Just (v :: a^)) = (Right v, state)
+        (Just d) = (Left ("Used variable is of wrong type: " +++ toString n), state)
+        _        = (Left ("Variable " +++ toString n +++ " is undefined"), state)
+readWriteVar n (Write a) state = (Right a, { state & map = 'Map'.put n (dynamic a) state.map})
+
+// Monadic definitions
+pure :: a -> Eval a p
+pure a = Eval \r state -> (Right a, state)
+
+(>>=) infixl 1 :: (Eval a p) (a -> Eval b q) -> Eval b q
+(>>=) (Eval e) f =
+    Eval \r state -> case e Read state of
+        (Left err, state2) = (Left err, state2)
+        (Right a, state2) = unEval (f a) r state2
+        
+(>>|) infixl 1 :: (Eval a p) (Eval b q) -> Eval b q
+(>>|) a b = a >>= \_ -> b
+        
+(<*>) infixl 4 :: (Eval (a -> b) p) (Eval a q) -> Eval b r
+(<*>) f a = f >>= \f` -> a >>= \a` -> pure (f` a`)
+
+// Semantics
+instance literals Eval where
+    Lit a = pure a
+
+instance arithexprs Eval where
+    Size  s   = s >>= \s` -> pure ('Set'.size s`)
+    (+.)  a b = a >>= \a` -> b >>= \b` -> pure (a` + b`)
+    (-.)  a b = a >>= \a` -> b >>= \b` -> pure (a` - b`)
+    (*.)  a b = a >>= \a` -> b >>= \b` -> pure (a` * b`)
+    (++.) set v = set >>= \set` -> v   >>= \v`   -> pure ('Set'.insert v` set`)
+    (.++) v set = v   >>= \v`   -> set >>= \set` -> pure ('Set'.insert v` set`)
+    (--.) set v = set >>= \set` -> v   >>= \v`   -> pure ('Set'.delete v` set`)
+    (.**) v set = v   >>= \v`   -> set >>= \set` -> undef //Complains about an internal overloading issue: pure ('Set'.mapSet (multiply v`) set`)
+        where multiply :: a a -> a | * a
+              multiply a1 a2 = a1 * a2
 
 //////////////////////////////////////////////////
 // Testing programs                             //
