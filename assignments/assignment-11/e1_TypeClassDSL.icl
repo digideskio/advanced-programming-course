@@ -252,6 +252,11 @@ instance arithexprs Eval where
     (.**) v set = v   >>= \v`   -> set >>= \set` -> undef //Complains about an internal overloading issue: pure ('Set'.mapSet (multiply v`) set`)
         where multiply :: a a -> a | * a
               multiply a1 a2 = a1 * a2
+              
+instance booleanexprs Eval where
+    (&&.) a b = a >>= \a` -> b >>= \b` -> pure (a` && b`)
+    (||.) a b = a >>= \a` -> b >>= \b` -> pure (a` || b`)
+    ~. a = a >>= \a` -> pure (not a`)
 
 //////////////////////////////////////////////////
 // Testing programs                             //
