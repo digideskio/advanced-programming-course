@@ -213,6 +213,9 @@ unEval (Eval f) = f
 initialState :: State
 initialState = { map = 'Map'.newMap, vars = 0 }
 
+eval :: (Eval a p) -> Result a
+eval (Eval f) = fst (f Read initialState)
+
 readWriteVar :: Int (ReadWrite a) State -> (Result a, State) | TC a
 readWriteVar n Read state =
     case 'Map'.get n state.map of
@@ -241,6 +244,12 @@ pure a = Eval \r state -> (Right a, state)
 instance literals Eval where
     Lit a = pure a
 
+instance variables Eval where
+    (=.) v a = a >>= \a` -> Eval \r state -> unEval v (Write a`) state
+    Var f = Eval \r state ->
+                let (x In (Eval rest)) = f (Eval (readWriteVar state.vars))
+                in rest Read {state & vars = inc state.vars, map = 'Map'.put state.vars (dynamic x) state.map}
+
 instance arithexprs Eval where
     Size  s   = s >>= \s` -> pure ('Set'.size s`)
     (+.)  a b = a >>= \a` -> b >>= \b` -> pure (a` + b`)
@@ -264,6 +273,16 @@ instance comparisons Eval where
     (<=.) a b = a >>= \a` -> b >>= \b` -> pure (a` <= b`)
     (>.)  a b = a >>= \a` -> b >>= \b` -> pure (a` > b`)
     (>=.) a b = a >>= \a` -> b >>= \b` -> pure (a` >= b`)
+
+instance statements Eval where
+    Skip = pure ()
+    (:.) a b = a >>| b >>= \b` -> pure b`
+    If c Then t Else e = c >>= \condition -> if condition (t >>| pure ()) (e >>| pure ())
+    While c Repeat s = c >>= \condition` -> if condition` (s >>| While c Repeat s) (pure ())
+    For f = undef
+
+    //For f = freshVar \v -> let (e Do s) = f v in put "for( " +.+ v +.+ put " in " +.+ e +.+ put " ) {" +.+ 
+    //                                      indent +.+ nl +.+ s +.+ put ";" +.+ unindent +.+ nl +.+ put "}"
 
 //////////////////////////////////////////////////
 // Testing programs                             //
@@ -312,8 +331,19 @@ findFirstNPrimes num =
     where emptySet :: Set Int
           emptySet = 'Set'.fromList []
 
+setTest :: v Int Stmt | DSL v
+setTest =
+    Var \set = ('Set'.fromList []) In
+    set =. New [5,1,1,2,2,3,3,4,4] :.
+    Lit 42
 
 testprog = Size (New [1,2] +. New [2,3])
-Start = show (findFirstNPrimes 15)
+Start 
+    #prog1 = eval (fac2 5)
+    #prog2 = case eval (findFirstNPrimes 15) of
+        Left _ = []
+        Right s = 'Set'.toList s
+    #prog3 = eval setTest
+    = prog3
 
 
