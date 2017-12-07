@@ -297,7 +297,6 @@ instance statements Eval where
                                     (Left err, state`) = (Left err, state`)
                                     (Right _, state`)  = (Right res, state`) 
                             ) (Right (), {state2 & vars = inc state2.vars}) values
-                        
                 )
 
 //////////////////////////////////////////////////
