@@ -257,6 +257,13 @@ instance booleanexprs Eval where
     (&&.) a b = a >>= \a` -> b >>= \b` -> pure (a` && b`)
     (||.) a b = a >>= \a` -> b >>= \b` -> pure (a` || b`)
     ~. a = a >>= \a` -> pure (not a`)
+    
+instance comparisons Eval where
+    (==.) a b = a >>= \a` -> b >>= \b` -> pure (a` == b`)
+    (<.)  a b = a >>= \a` -> b >>= \b` -> pure (a` < b`)
+    (<=.) a b = a >>= \a` -> b >>= \b` -> pure (a` <= b`)
+    (>.)  a b = a >>= \a` -> b >>= \b` -> pure (a` > b`)
+    (>=.) a b = a >>= \a` -> b >>= \b` -> pure (a` >= b`)
 
 //////////////////////////////////////////////////
 // Testing programs                             //
