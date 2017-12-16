@@ -106,18 +106,13 @@ where
 // Exercise 2                                   //
 //////////////////////////////////////////////////
 
-:: FilterProp a b = FilterProp (a->Bool) (a->b) 
+// Implement the filtered property test as a data constructor
+:: FilterProp b = (==>) infixl Bool b 
 
-// Combine a function to a property with a way to filter arguments
-(==>) infixl :: (a->Bool) (a->b) -> FilterProp a b | prop b
-(==>) filter` f = FilterProp filter` f
-
-// Implement a property instance for a function to a property
-// combined with its argument filter
-instance prop (FilterProp a b) | prop b & testArg a 
+instance prop (FilterProp b) | prop b
 where
-	holds (FilterProp filter` f) p = diagonal [holds (f a) {p & info = [" ",string{|*|} a:p.info]} \\ a <- (filter filter` gen{|*|})]
-
+  holds (==> bool val) p = if bool (holds val p) []
+  
 //////////////////////////////////////////////////
 // Examples                                     //
 //////////////////////////////////////////////////
@@ -126,4 +121,4 @@ pUpper :: Char -> Bool
 pUpper c = c /= toUpper c
 
 Start = ["pUpper1: "] ++ test (pUpper For ['a'..'z'])
-        ++ ["pUpper2: "] ++ test ((\c. isLower c) ==> pUpper)
+        ++ ["pUpper2: "] ++ test ((\c. isLower c ==> pUpper c))
