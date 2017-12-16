@@ -103,10 +103,27 @@ where
 	holds (f, cases) p = diagonal [holds (f a) {p & info = [" ",string{|*|} a:p.info]} \\ a <- cases]
 
 //////////////////////////////////////////////////
+// Exercise 2                                   //
+//////////////////////////////////////////////////
+
+:: FilterProp a b = FilterProp (a->Bool) (a->b) 
+
+// Combine a function to a property with a way to filter arguments
+(==>) infixl :: (a->Bool) (a->b) -> FilterProp a b | prop b
+(==>) filter` f = FilterProp filter` f
+
+// Implement a property instance for a function to a property
+// combined with its argument filter
+instance prop (FilterProp a b) | prop b & testArg a 
+where
+	holds (FilterProp filter` f) p = diagonal [holds (f a) {p & info = [" ",string{|*|} a:p.info]} \\ a <- (filter filter` gen{|*|})]
+
+//////////////////////////////////////////////////
 // Examples                                     //
 //////////////////////////////////////////////////
 
 pUpper :: Char -> Bool
 pUpper c = c /= toUpper c
 
-Start = ["pUpper: ": test (pUpper For ['a'..'z'])]
+Start = ["pUpper1: "] ++ test (pUpper For ['a'..'z'])
+        ++ ["pUpper2: "] ++ test ((\c. isLower c) ==> pUpper)
