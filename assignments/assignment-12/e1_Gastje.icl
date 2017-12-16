@@ -114,6 +114,16 @@ where
   holds (==> bool val) p = if bool (holds val p) [p]
   
 //////////////////////////////////////////////////
+// Exercise 3                                   //
+//////////////////////////////////////////////////
+  
+:: EqualsProp a = (=.=) infixl 2 a a
+
+instance prop (EqualsProp a) | == a & testArg a
+where
+  holds (=.= e1 e2) p = holds (e1 == e2) {p & info = ["\n      Right-hand side: " +++ string{|*|} e2, "\n      Left-hand side: " +++ string{|*|} e1, "\n   =.= evaluation:" : p.info]}
+  
+//////////////////////////////////////////////////
 // Examples                                     //
 //////////////////////////////////////////////////
 
@@ -126,7 +136,7 @@ fac n
     | n > 0     = n * fac (n - 1)
     | otherwise = -999
 
-pFac i = abs i < 10 ==> prod [1..i] == fac i
+pFac i = abs i < 10 ==> prod [1..i] =.= fac i
 
 Start = ["pUpper1: "] ++ test (pUpper For ['a'..'z'])
         ++ ["pUpper2: "] ++ test ((\c. isLower c ==> pUpper c))
