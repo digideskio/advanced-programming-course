@@ -119,7 +119,7 @@ where
   
 :: EqualsProp a = (=.=) infixl 2 a a
 
-instance prop (EqualsProp a) | == a & testArg a
+instance prop (EqualsProp a) | == a & string{|*|} a
 where
   holds (=.= e1 e2) p = holds (e1 == e2) {p & info = ["\n      Right-hand side: " +++ string{|*|} e2, "\n      Left-hand side: " +++ string{|*|} e1, "\n   =.= evaluation:" : p.info]}
   
