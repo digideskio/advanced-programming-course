@@ -1,4 +1,4 @@
-module e1_Gastje
+implementation module e1_Gastje
 
 /*
  * Jordi Riemens    s4243064
@@ -107,7 +107,7 @@ where
 //////////////////////////////////////////////////
 
 // Implement the filtered property test as a data constructor
-:: FilterProp b = (==>) infixl 1 Bool b 
+:: FilterProp b = (==>) infixl 1 Bool b
 
 instance prop (FilterProp b) | prop b
 where
