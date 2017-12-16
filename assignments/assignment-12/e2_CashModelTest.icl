@@ -1,5 +1,10 @@
 module e2_CashModelTest
 
+/*
+ * Jordi Riemens    s4243064
+ * Thomas Churchman s4206606
+ */
+
 import StdEnv, GenEq, e1_Gastje, e2_CashModel
 
 derive string Euro
