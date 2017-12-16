@@ -111,7 +111,7 @@ where
 
 instance prop (FilterProp b) | prop b
 where
-  holds (==> bool val) p = if bool (holds val p) []
+  holds (==> bool val) p = if bool (holds val p) [p]
   
 //////////////////////////////////////////////////
 // Examples                                     //
