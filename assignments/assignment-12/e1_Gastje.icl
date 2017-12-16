@@ -9,7 +9,7 @@ module e1_Gastje
  * Skeleton for Advanced Programming, week 12, 2017
  */
  
-import StdEnv, StdGeneric, GenEq
+import StdEnv, StdGeneric, GenEq, Data.Eq
 
 test :: p -> [String] | prop p
 test p = check 1000 (holds p prop0)
@@ -88,4 +88,25 @@ where
 	rev []    accu = accu
 	rev [x:r] accu = rev r [x:accu]
 
-Start = undef
+//////////////////////////////////////////////////
+// Exercise 1                                   //
+//////////////////////////////////////////////////
+
+// Combine a function to a property with its test cases
+(For) infixl :: (a->b) [a] -> (a->b, [a]) | prop b
+(For) f cases = (f, cases)
+
+// Implement a property instance for a function to a property
+// combined with its test cases
+instance prop (a->b, [a]) | prop b & testArg a 
+where
+	holds (f, cases) p = diagonal [holds (f a) {p & info = [" ",string{|*|} a:p.info]} \\ a <- cases]
+
+//////////////////////////////////////////////////
+// Examples                                     //
+//////////////////////////////////////////////////
+
+pUpper :: Char -> Bool
+pUpper c = c /= toUpper c
+
+Start = ["pUpper: ": test (pUpper For ['a'..'z'])]
