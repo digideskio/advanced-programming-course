@@ -107,7 +107,7 @@ where
 //////////////////////////////////////////////////
 
 // Implement the filtered property test as a data constructor
-:: FilterProp b = (==>) infixl Bool b 
+:: FilterProp b = (==>) infixl 1 Bool b 
 
 instance prop (FilterProp b) | prop b
 where
@@ -120,5 +120,14 @@ where
 pUpper :: Char -> Bool
 pUpper c = c /= toUpper c
 
+fac :: Int -> Int
+fac 0 = 1
+fac n
+    | n > 0     = n * fac (n - 1)
+    | otherwise = -999
+
+pFac i = abs i < 10 ==> prod [1..i] == fac i
+
 Start = ["pUpper1: "] ++ test (pUpper For ['a'..'z'])
         ++ ["pUpper2: "] ++ test ((\c. isLower c ==> pUpper c))
+        ++ ["pFac: "] ++ test pFac
