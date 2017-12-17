@@ -5,7 +5,7 @@ module e2_CashModelTest
  * Thomas Churchman s4206606
  */
 
-import StdEnv, GenEq, e1_Gastje, e2_CashModel
+import StdEnv, GenEq, GenBimap, e1_Gastje, e2_CashModel
 
 derive gen Euro, Product, []
 derive string Euro, Product, []
