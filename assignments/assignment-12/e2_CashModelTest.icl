@@ -7,23 +7,65 @@ module e2_CashModelTest
 
 import StdEnv, GenEq, e1_Gastje, e2_CashModel
 
-derive string Euro
-derive string Product
+derive gen Euro, Product, []
+derive string Euro, Product, []
 
 //////////////////////////////////////////////////
-// Additive properties                          //
+// Integer properties                           //
 //////////////////////////////////////////////////
 
-pEuroPlusAdditive :: Int Int -> EqualsProp Euro
-pEuroPlusAdditive v1 v2 = (euro v1 + euro v2) =.= {euro = v1 + v2, cent = 0}
+pEuroPlusCorrectnessInteger :: Int Int -> EqualsProp Euro
+pEuroPlusCorrectnessInteger v1 v2 = (euro v1 + euro v2) =.= {euro = v1 + v2, cent = 0}
 
-pEuroMinusAdditive :: Int Int -> EqualsProp Euro
-pEuroMinusAdditive v1 v2 = (euro v1 - euro v2) =.= {euro = v1 - v2, cent = 0}
+pEuroMinusCorrectnessInteger :: Int Int -> EqualsProp Euro
+pEuroMinusCorrectnessInteger v1 v2 = (euro v1 - euro v2) =.= {euro = v1 - v2, cent = 0}
+
+pEuroNegateCorrectnessInteger :: Int -> EqualsProp Euro
+pEuroNegateCorrectnessInteger v1 = (~(euro v1)) =.= {euro = ~v1, cent = 0}
+
+//////////////////////////////////////////////////
+// Tuple properties                             //
+//////////////////////////////////////////////////
+
+pEuroPlusCommutativeTuple :: (Int,Int) (Int,Int) -> EqualsProp Euro
+pEuroPlusCommutativeTuple v1 v2 = (euro v1 + euro v2) =.= (euro v2 + euro v1)
+
+pEuroMinusCommutativeTuple :: (Int,Int) (Int,Int) -> EqualsProp Euro
+pEuroMinusCommutativeTuple v1 v2 = (euro v1 - euro v2) =.= ~(euro v2 - euro v1)
+
+pEuroPlusZeroTuple :: (Int,Int) -> EqualsProp Euro
+pEuroPlusZeroTuple v1 = (euro v1 + zero) =.= (euro v1)
+
+pEuroMinusZeroTuple :: (Int,Int) -> EqualsProp Euro
+pEuroMinusZeroTuple v1 = (euro v1 - zero) =.= (euro v1)
+
+pEuroNegateInverseTuple :: (Int,Int) -> EqualsProp Euro
+pEuroNegateInverseTuple v1 = (euro v1 + ~(euro v1)) =.= zero
+
+//////////////////////////////////////////////////
+// Rem properties                               //
+//////////////////////////////////////////////////
+
+pActionRemValueOffWhenPresent :: Product [Product] -> FilterProp (EqualsProp Euro)
+pActionRemValueOffWhenPresent p list = (isMember p list) ==> (value (model list (Rem p))) =.= (euro list - euro p)
+    where value modelresult = euro (fst modelresult)
+
+pActionRemValuePreservedWhenMissing :: Product [Product] -> FilterProp (EqualsProp Euro)
+pActionRemValuePreservedWhenMissing p list = (not (isMember p list)) ==> (value (model list (Rem p))) =.= (euro list)
+    where value modelresult = euro (fst modelresult)
 
 //////////////////////////////////////////////////
 // Run tests                                    //
 //////////////////////////////////////////////////
 
-Start =    //["pEuroPlusAdditive: "] ++ test (\v1 v2 -> abs v1 < 10000 && abs v2 < 10000 ==> pEuroPlusAdditive v1 v2)
-           ["pEuroPlusAdditive: "] ++ test pEuroPlusAdditive
-        ++ ["pEuroMinusAdditive: "] ++ test pEuroMinusAdditive
+Start =    //["pEuroPlusCorrectnessInteger: "] ++ test (\v1 v2 -> abs v1 < 10000 && abs v2 < 10000 ==> pEuroPlusCorrectnessInteger v1 v2)
+           ["pEuroPlusCorrectnessInteger: "] ++ test pEuroPlusCorrectnessInteger
+        ++ ["pEuroMinusCorrectnessInteger: "] ++ test pEuroMinusCorrectnessInteger
+        ++ ["pEuroNegateCorrectnessInteger: "] ++ test pEuroNegateCorrectnessInteger /*
+        ++ ["pEuroPlusCommutativeTuple: "] ++ test pEuroPlusCommutativeTuple
+        ++ ["pEuroMinusCommutativeTuple: "] ++ test pEuroMinusCommutativeTuple
+        ++ ["pEuroPlusZeroTuple: "] ++ test pEuroPlusZeroTuple
+        ++ ["pEuroMinusZeroTuple: "] ++ test pEuroMinusZeroTuple
+        ++ ["pEuroNegateInverseTuple: "] ++ test pEuroNegateInverseTuple */
+        ++ ["pActionRemValueOffWhenPresent: "] ++ test pActionRemValueOffWhenPresent
+        ++ ["pActionRemValuePreservedWhenMissing: "] ++ test pActionRemValuePreservedWhenMissing 
